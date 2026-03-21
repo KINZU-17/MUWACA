@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUWACA Water Billing System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <h2>MUWACA Water Billing System</h2>
+            <p>Administration Login</p>
+            <form id="loginForm">
+                <label for="username">Username:</label>
+                <input type="text" id="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <button type="submit">Login</button>
+                <p id="loginError" class="error-message"></p>
+            </form>
+            <div class="demo-credentials">
+                <p><strong>Demo Credentials:</strong></p>
+                <p>Username: <code>admin</code></p>
+                <p>Password: <code>password123</code></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContent" class="main-content" style="display: none;">
+    <!-- Notification System -->
+    <div id="notificationContainer" class="notification-container">
+        <h4>Notifications</h4>
+        <div id="notificationList"></div>
+        <button id="checkOverdueBills" class="btn-check-overdue">Check Overdue Bills</button>
+    </div>
+
+    <header>
+        <h1>MUWACA WATER ENTERPRISES</h1>
+        <nav>
+            <button id="homeBtn">Home</button>
+            <button id="customerBtn">Customer Registration</button>
+            <button id="meterBtn">Meter Management</button>
+            <button id="financialBtn">Financial Tracking</button>
+            <button id="infrastructureBtn">Infrastructure</button>
+            <button id="reportsBtn">Reports</button>
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="active">
+            <h2>Welcome to MUWACA Water Billing System</h2>
+            <p>Select an option from the navigation menu above to manage your water utility operations.</p>
+            <div class="switchboard">
+                <div class="switchboard-item">
+                    <button onclick="showSection('customers')">Customer Registration</button>
+                    <p>Manage residential and commercial customer information</p>
+                </div>
+                <div class="switchboard-item">
+                    <button onclick="showSection('meters')">Meter Management</button>
+                    <p>Track water meters and consumption (m³)</p>
+                </div>
+                <div class="switchboard-item">
+                    <button onclick="showSection('financial')">Financial Tracking</button>
+                    <p>Handle billing, payments, and penalty calculations</p>
+                </div>
+                <div class="switchboard-item">
+                    <button onclick="showSection('infrastructure')">Infrastructure</button>
+                    <p>Manage water pipes, valves, and maintenance</p>
+                </div>
+                <div class="switchboard-item">
+                    <button onclick="showSection('reports')">Reports</button>
+                    <p>Generate payment histories and consumption analytics</p>
+                </div>
+            </div>
+        </section>
+        <section id="customers">
+            <h2>Customer Registration</h2>
+            <p>Manage details of residential and commercial customers.</p>
+            <form id="customerForm">
+                <input type="hidden" id="customerId">
+                <label for="customerName">Customer Name:</label>
+                <input type="text" id="customerName" required>
+                <label for="contact">Contact Person:</label>
+                <input type="text" id="contact" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+                <label for="phone">Phone:</label>
+                <input type="tel" id="phone" required>
+                <label for="address">Address:</label>
+                <textarea id="address" required></textarea>
+                <button type="submit">Register Customer</button>
+            </form>
+            <div id="customerList"></div>
+        </section>
+
+        <section id="meters">
+            <h2>Meter Management</h2>
+            <p>Track water meters and monthly consumption readings.</p>
+            <form id="meterForm">
+                <input type="hidden" id="meterId">
+                <label for="customerId">Customer ID:</label>
+                <input type="text" id="customerId" required>
+                <label for="meterNumber">Meter Number:</label>
+                <input type="text" id="meterNumber" required>
+                <label for="previousReading">Previous Reading (m³):</label>
+                <input type="number" id="previousReading" step="0.01" required>
+                <label for="currentReading">Current Reading (m³):</label>
+                <input type="number" id="currentReading" step="0.01" required>
+                <label for="consumption">Consumption (m³):</label>
+                <input type="number" id="consumption" step="0.01" readonly>
+                <label for="readingDate">Reading Date:</label>
+                <input type="date" id="readingDate" required>
+                <button type="submit">Record Meter Reading</button>
+            </form>
+            <div id="meterList"></div>
+        </section>
+
+        <section id="financial">
+            <h2>Financial Tracking</h2>
+            <p>Automate monthly billing with detailed breakdown, process payments, and calculate 10% monthly penalty for overdue balances.</p>
+            <form id="billingForm">
+                <input type="hidden" id="billId">
+                <div class="billing-grid">
+                    <div class="billing-field">
+                        <label for="customerIdBill">Customer ID:</label>
+                        <input type="text" id="customerIdBill" required>
+                    </div>
+                    <div class="billing-field">
+                        <label for="previousTotalPayable">Previous Total Payable (KES):</label>
+                        <input type="number" id="previousTotalPayable" step="0.01" value="0" readonly>
+                    </div>
+                    <div class="billing-field">
+                        <label for="previousBalance">Previous Balance (KES):</label>
+                        <input type="number" id="previousBalance" step="0.01" value="0" readonly>
+                    </div>
+                    <div class="billing-field">
+                        <label for="consumptionAmount">Consumption Amount (KES):</label>
+                        <input type="number" id="consumptionAmount" step="0.01" readonly>
+                    </div>
+                    <div class="billing-field">
+                        <label for="maintenanceAmount">Maintenance Amount (KES):</label>
+                        <input type="number" id="maintenanceAmount" step="0.01" value="200" readonly>
+                    </div>
+                    <div class="billing-field">
+                        <label for="totalPayableAmount">Total Payable Amount (KES):</label>
+                        <input type="number" id="totalPayableAmount" step="0.01" readonly>
+                    </div>
+                    <div class="billing-field">
+                        <label for="paidAmount">Paid Amount (KES):</label>
+                        <input type="number" id="paidAmount" step="0.01" value="0">
+                    </div>
+                    <div class="billing-field">
+                        <label for="dueDate">Due Date:</label>
+                        <input type="date" id="dueDate" required>
+                    </div>
+                </div>
+                <button type="submit">Generate Bill</button>
+            </form>
+            <button id="calculatePenalties">Calculate Penalties</button>
+            <div id="billingList"></div>
+        </section>
+
+        <section id="infrastructure">
+            <h2>Infrastructure</h2>
+            <p>Manage water pipes, valves, maintenance, and repairs.</p>
+            <form id="infrastructureForm">
+                <input type="hidden" id="serviceId">
+                <label for="customerIdInfra">Customer ID:</label>
+                <input type="text" id="customerIdInfra" required>
+                <label for="service">Service Type:</label>
+                <select id="service" required>
+                    <option value="pipe_installation">Pipe Installation</option>
+                    <option value="meter_installation">Meter Installation</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="repair">Repair</option>
+                </select>
+                <label for="details">Details:</label>
+                <textarea id="details" required></textarea>
+                <button type="submit">Schedule Service</button>
+            </form>
+            <div id="serviceList"></div>
+        </section>
+
+        <section id="reports">
+            <h2>Reports</h2>
+            <p>Generate professional reports like payment histories, disconnected clients, and revenue analytics.</p>
+            <button id="paymentHistory">Payment History</button>
+            <button id="disconnectedClients">Disconnected Clients</button>
+            <button id="revenueAnalytics">Revenue Analytics</button>
+            <div id="reportOutput"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 MUWACA WATER ENTERPRISES - KCSE Computer Studies Project</p>
+    </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
