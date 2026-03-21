@@ -267,6 +267,23 @@ app.get('/api/reports/revenue-analytics', (req, res) => {
     });
 });
 
+// Revenue Analytics - Previous Month
+app.get('/api/reports/revenue-previous-month', (req, res) => {
+    const now = new Date();
+    const firstDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfPreviousMonth = new Date(firstDayOfCurrentMonth);
+    lastDayOfPreviousMonth.setDate(lastDayOfPreviousMonth.getDate() - 1);
+    const firstDayOfPreviousMonth = new Date(lastDayOfPreviousMonth.getFullYear(), lastDayOfPreviousMonth.getMonth(), 1);
+    
+    const startDate = firstDayOfPreviousMonth.toISOString().split('T')[0];
+    const endDate = lastDayOfPreviousMonth.toISOString().split('T')[0];
+    
+    db.get('SELECT SUM(paid_amount) as previousMonthPaid FROM bills WHERE paid = 1 AND due_date BETWEEN ? AND ?', [startDate, endDate], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ previousMonthPaid: row.previousMonthPaid || 0, period: `${startDate} to ${endDate}` });
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

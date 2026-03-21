@@ -1,7 +1,7 @@
 {
-  "name": "azani-isp",
+  "name": "muwaca-water-billing",
   "version": "1.0.0",
-  "description": "Azani ISP Management System",
+  "description": "MUWACA Water Billing System - Water utility management with customer billing, meter tracking, and reporting",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,5 +15,18 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
-  }
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "water",
+    "billing",
+    "utility",
+    "management",
+    "meter",
+    "tracking"
+  ],
+  "author": "MUWACA Water Enterprises",
+  "license": "MIT"
 }
