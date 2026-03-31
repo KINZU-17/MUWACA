@@ -356,10 +356,22 @@ document.getElementById('meterForm').addEventListener('submit', async function(e
     const customerName = document.getElementById('customerName').value;
     const customers = await fetchData('/customers');
     const customer = customers.find(c => c.name === customerName);
-    const customerId = customer ? customer.customer_id : '';
     
+    if (!customer) {
+        addNotification('error', 'Error', 'Please select a valid customer from the list');
+        return;
+    }
+    
+    const customerId = customer.customer_id;
     const previousReading = parseFloat(document.getElementById('previousReading').value);
-    const currentReading = document.getElementById('currentReading').value ? parseFloat(document.getElementById('currentReading').value) : 0;
+    const currentReadingInput = document.getElementById('currentReading').value;
+    const currentReading = currentReadingInput ? parseFloat(currentReadingInput) : 0;
+    
+    if (isNaN(previousReading) || isNaN(currentReading)) {
+        addNotification('error', 'Error', 'Please enter valid meter readings');
+        return;
+    }
+    
     const consumption = currentReading - previousReading;
     
     const data = {
@@ -401,7 +413,13 @@ document.getElementById('billingForm').addEventListener('submit', async function
     const customerName = document.getElementById('customerNameBill').value;
     const customers = await fetchData('/customers');
     const customer = customers.find(c => c.name === customerName);
-    const customerId = customer ? customer.customer_id : '';
+    
+    if (!customer) {
+        addNotification('error', 'Error', 'Please select a valid customer from the list');
+        return;
+    }
+    
+    const customerId = customer.customer_id;
     
     // Get customer's latest meter reading to calculate consumption amount
     const meters = await fetchData('/meters');
@@ -508,7 +526,13 @@ document.getElementById('infrastructureForm').addEventListener('submit', async f
     const customerName = document.getElementById('customerNameInfra').value;
     const customers = await fetchData('/customers');
     const customer = customers.find(c => c.name === customerName);
-    const customerId = customer ? customer.customer_id : '';
+    
+    if (!customer) {
+        addNotification('error', 'Error', 'Please select a valid customer from the list');
+        return;
+    }
+    
+    const customerId = customer.customer_id;
     
     const data = {
         service_id: serviceId || Date.now().toString(),

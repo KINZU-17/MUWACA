@@ -31,7 +31,7 @@ The project is typically split into two main parts:
 * **Timeline:** The project usually runs from January to July of the exam year.
 * **Grading:** It contributes a large portion of the final Computer Studies grade, so documentation and a functional "Switchboard" (navigation menu) are crucial for high marks.
 
-## System Analysis and Design
+## System Analysis and Desi
 
 ### Problem Analysis
 MUWACA WATER ENTERPRISES needs a system to manage customer subscriptions, meter readings, billing, and infrastructure services. Manual processes are inefficient, leading to errors in billing and service tracking. The system must automate these processes, ensure data integrity, and provide reporting capabilities.
