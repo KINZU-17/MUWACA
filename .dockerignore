@@ -1,0 +1,16 @@
+# MUWACA Water Billing System - Docker Ignore
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+*.md
+*.log
+muwaca.db
+muwaca_backup.db
+data
+ssl
+nginx.conf
+docker-compose.yml
+Dockerfile
+.dockerignore

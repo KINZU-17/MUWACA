@@ -1,36 +1,367 @@
-e <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MUWACA Water Billing System</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="loginContainer" class="login-container">
+    <!-- AI Water Canvas Background -->
+    <canvas id="waterCanvas"></canvas>
+    
+    <div id="loginContainer" class="login-container" role="main" aria-label="Login Page">
+        <!-- Animated Water Bubbles -->
+        <div class="bubble-container">
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+        </div>
+        
         <div class="login-box">
             <div class="login-logo">
-                <svg viewBox="0 0 24 24" width="80" height="80">
-                    <path fill="#0284c7" d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/>
-                    <path fill="#0ea5e9" d="M12 6c-3.31 2.82-5 5.26-5 7.32 0 3.1 2.36 5.1 5 5.1s5-2 5-5.1c0-2.06-1.69-4.5-5-7.32z"/>
+                <svg viewBox="0 0 100 100" width="100" height="100">
+                    <defs>
+                        <linearGradient id="waterGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#0284c7;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0369a1;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <path fill="url(#waterGradient)" filter="url(#glow)" d="M50 5c-26.67 22.75-40 42.4-40 59 0 24.9 19 41 40 41s40-16.1 40-41c0-13.6-13.35-36.25-40-59z">
+                        <animate attributeName="d" dur="3s" repeatCount="indefinite"
+                            values="M50 5c-26.67 22.75-40 42.4-40 59 0 24.9 19 41 40 41s40-16.1 40-41c0-13.6-13.35-36.25-40-59z;
+                                    M50 8c-24 20-37 40-37 56 0 23 17 39 37 39s37-16 37-39c0-16-13-36-37-56z;
+                                    M50 5c-26.67 22.75-40 42.4-40 59 0 24.9 19 41 40 41s40-16.1 40-41c0-13.6-13.35-36.25-40-59z"/>
+                    </path>
+                    <path fill="#ffffff" fill-opacity="0.3" d="M50 25c-17.78 15.17-26.67 28.27-26.67 39.33 0 16.6 12.67 27.33 26.67 27.33S76.67 81.27 76.67 64.67C76.67 53.6 67.78 40.5 50 25z">
+                        <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.3;0.5;0.3"/>
+                    </path>
                 </svg>
             </div>
-            <h2>MUWACA Water Billing System</h2>
-            <p>Administration Login</p>
-            <form id="loginForm">
-                <label for="username">Username:</label>
-                <input type="text" id="username" required>
-                <label for="password">Password:</label>
-                <input type="password" id="password" required>
-                <button type="submit">Login</button>
+            <h2>MUWACA</h2>
+            <p class="login-subtitle">Water Billing System</p>
+            
+            <form id="loginForm" aria-label="Login Form">
+                <div class="input-group">
+                    <label for="username" id="usernameLabel">Username</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        <input type="text" id="username" placeholder="Enter your username" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="password" id="passwordLabel">Password</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                        </svg>
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-password" onclick="togglePassword()">
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="remember-forgot">
+                    <label class="remember-me">
+                        <input type="checkbox" id="rememberMe">
+                        <span class="checkmark"></span>
+                        Remember me
+                    </label>
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
+                
+                <button type="submit" class="login-btn" aria-label="Sign In">
+                    <span class="btn-text">Sign In</span>
+                    <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20">
+                        <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                    </svg>
+                </button>
+                
                 <p id="loginError" class="error-message"></p>
             </form>
+            
             <div class="demo-credentials">
-                <p><strong>Demo Credentials:</strong></p>
-                <p>Username: <code>admin</code></p>
-                <p>Password: <code>password123</code></p>
+                <div class="demo-header">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                    <span>Demo Credentials</span>
+                </div>
+                <div class="credential-row">
+                    <span class="credential-label">Username:</span>
+                    <code>admin</code>
+                </div>
+                <div class="credential-row">
+                    <span class="credential-label">Password:</span>
+                    <code>password123</code>
+                </div>
+            </div>
+            
+            <div class="login-footer">
+                <div class="customer-portal-link">
+                    <button onclick="showCustomerLogin()" class="customer-login-link-btn">
+                        <svg viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        Customer Portal Login
+                    </button>
+                </div>
+                <div class="water-drops">
+                    <span class="drop">💧</span>
+                    <span class="drop">💧</span>
+                    <span class="drop">💧</span>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Customer Portal Login -->
+    <div id="customerLoginContainer" class="customer-login-container" style="display: none;">
+        <div class="customer-login-box">
+            <div class="customer-login-header">
+                <svg viewBox="0 0 24 24" width="48" height="48">
+                    <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <h2>Customer Portal</h2>
+                <p>View your bills, consumption, and payment history</p>
+            </div>
+            <form id="customerLoginForm">
+                <div class="input-group">
+                    <label for="customerPhone">Phone Number</label>
+                    <input type="tel" id="customerPhone" placeholder="Enter your phone number" required>
+                </div>
+                <div class="input-group">
+                    <label for="customerPin">PIN</label>
+                    <input type="password" id="customerPin" placeholder="Enter your PIN" required>
+                </div>
+                <button type="submit" class="customer-login-btn">Access Portal</button>
+                <p id="customerLoginError" class="error-message"></p>
+            </form>
+            <div class="customer-login-footer">
+                <button onclick="showAdminLogin()" class="switch-login-btn">Admin Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Portal Dashboard -->
+    <div id="customerPortal" class="customer-portal" style="display: none;">
+        <header class="customer-header">
+            <div class="customer-header-content">
+                <h1>MUWACA Customer Portal</h1>
+                <button id="customerLogoutBtn" class="customer-logout-btn">Logout</button>
+            </div>
+        </header>
+        
+        <main class="customer-main">
+            <div class="customer-welcome">
+                <h2>Welcome, <span id="customerNameDisplay">Customer</span></h2>
+                <p>Manage your water account online</p>
+            </div>
+            
+            <!-- Customer Stats -->
+            <div class="customer-stats">
+                <div class="customer-stat-card">
+                    <div class="customer-stat-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                    </div>
+                    <div class="customer-stat-content">
+                        <div class="customer-stat-value" id="customerCurrentBill">KES 0</div>
+                        <div class="customer-stat-label">Current Bill</div>
+                    </div>
+                </div>
+                <div class="customer-stat-card">
+                    <div class="customer-stat-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/></svg>
+                    </div>
+                    <div class="customer-stat-content">
+                        <div class="customer-stat-value" id="customerConsumption">0 m³</div>
+                        <div class="customer-stat-label">This Month</div>
+                    </div>
+                </div>
+                <div class="customer-stat-card">
+                    <div class="customer-stat-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    </div>
+                    <div class="customer-stat-content">
+                        <div class="customer-stat-value" id="customerDueDate">-</div>
+                        <div class="customer-stat-label">Due Date</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Customer Tabs -->
+            <div class="customer-tabs">
+                <button class="customer-tab active" onclick="showCustomerTab('bills')">My Bills</button>
+                <button class="customer-tab" onclick="showCustomerTab('payments')">Payment History</button>
+                <button class="customer-tab" onclick="showCustomerTab('paymentPortal')">Make Payment</button>
+                <button class="customer-tab" onclick="showCustomerTab('consumption')">Consumption</button>
+                <button class="customer-tab" onclick="showCustomerTab('services')">Service Requests</button>
+                <button class="customer-tab" onclick="showCustomerTab('profile')">My Profile</button>
+                <button class="customer-tab" onclick="showCustomerTab('support')">Support</button>
+            </div>
+            
+            <!-- Customer Tab Content -->
+            <div id="customerBills" class="customer-tab-content active">
+                <h3>My Bills</h3>
+                <div id="customerBillsList"></div>
+            </div>
+            
+            <div id="customerPayments" class="customer-tab-content">
+                <h3>Payment History</h3>
+                <div id="customerPaymentsList"></div>
+            </div>
+            
+            <div id="customerConsumption" class="customer-tab-content">
+                <h3>Consumption History</h3>
+                <canvas id="customerConsumptionChart"></canvas>
+            </div>
+            
+            <div id="customerPaymentPortal" class="customer-tab-content">
+                <h3>Make Payment</h3>
+                <div class="payment-methods">
+                    <div class="payment-method" onclick="selectPaymentMethod('mpesa')">
+                        <div class="payment-method-icon">📱</div>
+                        <div class="payment-method-name">M-Pesa</div>
+                        <div class="payment-method-desc">Pay via M-Pesa mobile money</div>
+                    </div>
+                    <div class="payment-method" onclick="selectPaymentMethod('card')">
+                        <div class="payment-method-icon">💳</div>
+                        <div class="payment-method-name">Card Payment</div>
+                        <div class="payment-method-desc">Pay with Visa/Mastercard</div>
+                    </div>
+                </div>
+                
+                <div id="mpesaPayment" class="payment-form" style="display: none;">
+                    <h4>M-Pesa Payment</h4>
+                    <form id="mpesaForm">
+                        <label for="mpesaPhone">M-Pesa Phone Number:</label>
+                        <input type="tel" id="mpesaPhone" placeholder="e.g., 0712345678" required>
+                        <label for="mpesaAmount">Amount (KES):</label>
+                        <input type="number" id="mpesaAmount" step="0.01" required>
+                        <button type="submit" class="payment-submit-btn">Pay with M-Pesa</button>
+                    </form>
+                </div>
+                
+                <div id="cardPayment" class="payment-form" style="display: none;">
+                    <h4>Card Payment</h4>
+                    <form id="cardForm">
+                        <label for="cardNumber">Card Number:</label>
+                        <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" required>
+                        <div class="card-row">
+                            <div>
+                                <label for="cardExpiry">Expiry:</label>
+                                <input type="text" id="cardExpiry" placeholder="MM/YY" required>
+                            </div>
+                            <div>
+                                <label for="cardCvv">CVV:</label>
+                                <input type="text" id="cardCvv" placeholder="123" required>
+                            </div>
+                        </div>
+                        <label for="cardAmount">Amount (KES):</label>
+                        <input type="number" id="cardAmount" step="0.01" required>
+                        <button type="submit" class="payment-submit-btn">Pay with Card</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="customerSupport" class="customer-tab-content">
+                <h3>Request Support</h3>
+                <form id="supportForm">
+                    <label for="supportType">Issue Type:</label>
+                    <select id="supportType" required>
+                        <option value="billing">Billing Issue</option>
+                        <option value="meter">Meter Problem</option>
+                        <option value="leak">Water Leak</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <label for="supportMessage">Message:</label>
+                    <textarea id="supportMessage" placeholder="Describe your issue..." required></textarea>
+                    <button type="submit">Submit Request</button>
+                </form>
+            </div>
+            
+            <div id="customerServices" class="customer-tab-content">
+                <h3>Service Requests</h3>
+                <div class="service-request-form">
+                    <h4>Request a Service</h4>
+                    <form id="serviceRequestForm">
+                        <label for="serviceType">Service Type:</label>
+                        <select id="serviceType" required>
+                            <option value="meter_installation">Meter Installation</option>
+                            <option value="meter_repair">Meter Repair</option>
+                            <option value="pipe_installation">Pipe Installation</option>
+                            <option value="pipe_repair">Pipe Repair</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <label for="serviceDetails">Details:</label>
+                        <textarea id="serviceDetails" placeholder="Describe the service you need..." required></textarea>
+                        <label for="preferredDate">Preferred Date:</label>
+                        <input type="date" id="preferredDate" required>
+                        <button type="submit">Submit Request</button>
+                    </form>
+                </div>
+                <div id="customerServiceRequests">
+                    <h4>My Service Requests</h4>
+                    <div id="serviceRequestsList"></div>
+                </div>
+            </div>
+            
+            <div id="customerProfile" class="customer-tab-content">
+                <h3>My Profile</h3>
+                <div class="profile-section">
+                    <div class="profile-info">
+                        <h4>Account Information</h4>
+                        <div class="profile-details">
+                            <div class="profile-row">
+                                <span class="profile-label">Name:</span>
+                                <span id="profileName" class="profile-value">-</span>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Email:</span>
+                                <span id="profileEmail" class="profile-value">-</span>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Phone:</span>
+                                <span id="profilePhone" class="profile-value">-</span>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Address:</span>
+                                <span id="profileAddress" class="profile-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        <button onclick="editProfile()" class="btn-edit-profile">Edit Profile</button>
+                        <button onclick="changePassword()" class="btn-change-password">Change Password</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="customer-footer">
+            <p>&copy; 2026 MUWACA WATER ENTERPRISES</p>
+        </footer>
     </div>
 
     <div id="mainContent" class="main-content" style="display: none;">
@@ -44,13 +375,14 @@ e <!DOCTYPE html>
             </svg>
         </div>
         <h1>MUWACA WATER ENTERPRISES</h1>
-        <nav>
+        <nav role="navigation" aria-label="Main Navigation">
             <button id="homeBtn">Home</button>
             <button id="customerBtn">Customer Registration</button>
             <button id="meterBtn">Meter Management</button>
             <button id="financialBtn">Financial Tracking</button>
             <button id="infrastructureBtn">Infrastructure</button>
             <button id="reportsBtn">Reports</button>
+            <button id="darkModeToggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
             <button id="logoutBtn" class="logout-btn">Logout</button>
         </nav>
     </header>
@@ -66,66 +398,132 @@ e <!DOCTYPE html>
     </div>
 
     <main>
+        <!-- Home / Dashboard -->
         <section id="home" class="active">
-            <div class="hero">
-                <div class="hero-content">
-                    <svg class="hero-water" viewBox="0 0 100 100" width="120" height="120">
-                        <path fill="#00B4D8" fill-opacity="0.3" d="M50 5c-26.67 22.75-40 42.4-40 59 0 24.9 19 41 40 41s40-16.1 40-41c0-13.6-13.35-36.25-40-59z"/>
-                        <path fill="#0077B6" fill-opacity="0.5" d="M50 15c-22.22 18.96-33.33 35.33-33.33 49.17 0 20.75 15.83 34.17 33.33 34.17S66.67 85 66.67 64.17C66.67 50.33 55.56 33.96 33.33 15z"/>
-                        <path fill="#00B4D8" d="M50 25c-17.78 15.17-26.67 28.27-26.67 39.33 0 16.6 12.67 27.33 26.67 27.33S50.67 81.27 50.67 64.67C50.67 53.6 41.78 40.5 24 25z"/>
-                    </svg>
-                    <h2>Welcome to MUWACA Water Billing System</h2>
-                    <p>Your trusted partner in efficient water utility management. Streamline billing, track consumption, and deliver excellent service to your customers.</p>
+            <div class="dashboard-header">
+                <h2>Dashboard Overview</h2>
+                <p>Real-time insights into your water billing operations</p>
+            </div>
+            
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon customers-icon">
+                        <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalCustomers">0</div>
+                        <div class="stat-label">Total Customers</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon meters-icon">
+                        <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="activeMeters">0</div>
+                        <div class="stat-label">Active Meters</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon revenue-icon">
+                        <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="monthlyRevenue">KES 0</div>
+                        <div class="stat-label">Monthly Revenue</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon overdue-icon">
+                        <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="overdueBills">0</div>
+                        <div class="stat-label">Overdue Bills</div>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Monthly Revenue Trend</h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Water Consumption (m³)</h3>
+                    <canvas id="consumptionChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3>Quick Actions</h3>
+                <div class="actions-grid">
+                    <button onclick="showSection('customers')" class="action-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        <span>Add Customer</span>
+                    </button>
+                    <button onclick="showSection('meters')" class="action-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/></svg>
+                        <span>Record Reading</span>
+                    </button>
+                    <button onclick="showSection('financial')" class="action-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                        <span>Generate Bill</span>
+                    </button>
+                    <button onclick="showSection('reports')" class="action-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                        <span>View Reports</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Switchboard -->
             <div class="switchboard">
                 <div class="switchboard-item">
                     <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" width="40" height="40">
-                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                     </div>
                     <button onclick="showSection('customers')">Customer Registration</button>
                     <p>Manage residential and commercial customer information</p>
                 </div>
                 <div class="switchboard-item">
                     <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" width="40" height="40">
-                            <path fill="currentColor" d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/></svg>
                     </div>
                     <button onclick="showSection('meters')">Meter Management</button>
                     <p>Track water meters and consumption (m³)</p>
                 </div>
                 <div class="switchboard-item">
                     <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" width="40" height="40">
-                            <path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
                     </div>
                     <button onclick="showSection('financial')">Financial Tracking</button>
                     <p>Handle billing, payments, and penalty calculations</p>
                 </div>
                 <div class="switchboard-item">
                     <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" width="40" height="40">
-                            <path fill="currentColor" d="M22 5.18L10.59 16.6l-4.24-4.24 1.41-1.41 2.83 2.83 10-10z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M22 5.18L10.59 16.6l-4.24-4.24 1.41-1.41 2.83 2.83 10-10z"/></svg>
                     </div>
                     <button onclick="showSection('infrastructure')">Infrastructure</button>
                     <p>Manage water pipes, valves, and maintenance</p>
                 </div>
                 <div class="switchboard-item">
                     <div class="feature-icon">
-                        <svg viewBox="0 0 24 24" width="40" height="40">
-                            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                     </div>
                     <button onclick="showSection('reports')">Reports</button>
                     <p>Generate payment histories and consumption analytics</p>
                 </div>
             </div>
         </section>
+
+        <!-- Customer Registration -->
         <section id="customers">
             <h2>Customer Registration</h2>
             <p>Manage details of residential and commercial customers.</p>
@@ -146,13 +544,14 @@ e <!DOCTYPE html>
             <div id="customerList"></div>
         </section>
 
+        <!-- Meter Management -->
         <section id="meters">
             <h2>Meter Management</h2>
             <p>Track water meters and monthly consumption readings.</p>
             <form id="meterForm">
                 <input type="hidden" id="meterId">
-                <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" list="customerNamesList" required>
+                <label for="meterCustomerName">Customer Name:</label>
+                <input type="text" id="meterCustomerName" list="customerNamesList" required>
                 <datalist id="customerNamesList"></datalist>
                 <label for="meterNumber">Meter Number:</label>
                 <input type="text" id="meterNumber" required>
@@ -169,6 +568,7 @@ e <!DOCTYPE html>
             <div id="meterList"></div>
         </section>
 
+        <!-- Financial Tracking -->
         <section id="financial">
             <h2>Financial Tracking</h2>
             <p>Automate monthly billing with detailed breakdown, process payments, and calculate 10% monthly penalty for overdue balances.</p>
@@ -215,6 +615,7 @@ e <!DOCTYPE html>
             <div id="billingList"></div>
         </section>
 
+        <!-- Infrastructure -->
         <section id="infrastructure">
             <h2>Infrastructure</h2>
             <p>Manage water pipes, valves, maintenance, and repairs.</p>
@@ -230,6 +631,15 @@ e <!DOCTYPE html>
                     <option value="maintenance">Maintenance</option>
                     <option value="repair">Repair</option>
                 </select>
+                <label for="serviceStatus">Status:</label>
+                <select id="serviceStatus">
+                    <option value="scheduled">Scheduled</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <label for="scheduledDate">Scheduled Date:</label>
+                <input type="date" id="scheduledDate">
                 <label for="details">Details:</label>
                 <textarea id="details" required></textarea>
                 <button type="submit">Schedule Service</button>
@@ -237,12 +647,26 @@ e <!DOCTYPE html>
             <div id="serviceList"></div>
         </section>
 
+        <!-- Reports -->
         <section id="reports">
             <h2>Reports</h2>
             <p>Generate professional reports like payment histories, disconnected clients, and revenue analytics.</p>
-            <button id="paymentHistory">Payment History</button>
-            <button id="disconnectedClients">Disconnected Clients</button>
-            <button id="revenueAnalytics">Revenue Analytics</button>
+            <div class="report-buttons">
+                <button id="paymentHistory">📋 Payment History</button>
+                <button id="disconnectedClients">⚠️ Disconnected Clients</button>
+                <button id="revenueAnalytics">📊 Revenue Analytics</button>
+                <button id="consumptionAnalytics">💧 Consumption Analytics</button>
+                <button id="printReport" onclick="printReport()">🖨️ Print Report</button>
+            </div>
+            <div class="export-buttons">
+                <span class="export-label">Export:</span>
+                <button id="exportPaymentPdf">⬇ Payment History PDF</button>
+                <button id="exportPaymentExcel">⬇ Payment History Excel</button>
+                <button id="exportDisconnectedPdf">⬇ Disconnected Customers PDF</button>
+                <button id="exportRevenuePdf">⬇ Revenue Analytics PDF</button>
+                <button id="exportJson">⬇ Full Data JSON</button>
+                <button id="backupDb">💾 Backup Database</button>
+            </div>
             <div id="reportOutput"></div>
         </section>
     </main>
@@ -252,6 +676,119 @@ e <!DOCTYPE html>
     </footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
+    <script>
+        // AI Water Canvas Animation
+        const canvas = document.getElementById('waterCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Water particles
+        const particles = [];
+        const particleCount = 100;
+        
+        class WaterParticle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.hue = Math.random() * 40 + 180; // Blue to cyan range
+            }
+            
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // Wave effect
+                this.x += Math.sin(this.y * 0.01) * 0.5;
+                
+                // Reset if out of bounds
+                if (this.x < 0 || this.x > canvas.width || 
+                    this.y < 0 || this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.opacity})`;
+                ctx.fill();
+                
+                // Glow effect
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = `hsla(${this.hue}, 80%, 60%, 0.5)`;
+            }
+        }
+        
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new WaterParticle());
+        }
+        
+        // Water waves
+        let waveOffset = 0;
+        
+        function drawWaves() {
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.7);
+            
+            for (let x = 0; x <= canvas.width; x += 10) {
+                const y = canvas.height * 0.7 + 
+                    Math.sin((x + waveOffset) * 0.02) * 30 +
+                    Math.sin((x + waveOffset) * 0.01) * 20;
+                ctx.lineTo(x, y);
+            }
+            
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            
+            const gradient = ctx.createLinearGradient(0, canvas.height * 0.7, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(14, 165, 233, 0.1)');
+            gradient.addColorStop(1, 'rgba(3, 105, 161, 0.2)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw waves
+            drawWaves();
+            waveOffset += 2;
+            
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+        }
+    </script>
 </body>
 </html>
