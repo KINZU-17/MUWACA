@@ -11,10 +11,14 @@ function checkLogin() {
 function showLoginForm() {
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('customerLoginContainer').style.display = 'none';
+    document.getElementById('customerPortal').style.display = 'none';
 }
 function showMainContent() {
     document.getElementById('loginContainer').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('customerLoginContainer').style.display = 'none';
+    document.getElementById('customerPortal').style.display = 'none';
     loadDashboard();
 }
 
@@ -73,21 +77,25 @@ document.getElementById('customerLoginForm').addEventListener('submit', async fu
     const phone = document.getElementById('customerPhone').value;
     const pin = document.getElementById('customerPin').value;
     const errorMsg = document.getElementById('customerLoginError');
-    
+
     try {
-        const customers = await fetchData('/customers');
-        const customer = customers.find(c => c.phone === phone);
-        
-        if (customer) {
-            // For demo, accept any PIN. In production, validate against stored PIN
-            currentCustomer = customer;
+        const response = await fetch(`${API_BASE}/customer-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, pin })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            currentCustomer = data.customer;
+            localStorage.setItem('authToken', data.token);
             document.getElementById('customerLoginContainer').style.display = 'none';
             document.getElementById('customerPortal').style.display = 'block';
-            document.getElementById('customerNameDisplay').textContent = customer.name;
+            document.getElementById('customerNameDisplay').textContent = data.customer.name;
             loadCustomerData();
             errorMsg.textContent = '';
         } else {
-            errorMsg.textContent = 'Customer not found. Please check your phone number.';
+            errorMsg.textContent = data.error || 'Customer not found. Please check your phone number.';
         }
     } catch (error) {
         errorMsg.textContent = 'Login failed. Please try again.';
@@ -96,8 +104,8 @@ document.getElementById('customerLoginForm').addEventListener('submit', async fu
 
 document.getElementById('customerLogoutBtn').addEventListener('click', function() {
     currentCustomer = null;
-    document.getElementById('customerPortal').style.display = 'none';
-    document.getElementById('loginContainer').style.display = 'flex';
+    localStorage.removeItem('authToken');
+    showLoginForm();
 });
 
 async function loadCustomerData() {
@@ -990,9 +998,15 @@ async function fetchData(endpoint, showLoadingState = true) {
     if (showLoadingState) {
         showLoading(loadingId);
     }
-    
+
+    const headers = { 'Content-Type': 'application/json' };
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
-        const response = await fetch(`${API_BASE}${endpoint}`);
+        const response = await fetch(`${API_BASE}${endpoint}`, { headers });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -1017,10 +1031,16 @@ async function sendData(endpoint, method, data, showLoadingState = true) {
         showLoading(loadingId);
     }
     
+    const headers = { 'Content-Type': 'application/json' };
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, {
             method,
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(data)
         });
         

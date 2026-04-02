@@ -318,6 +318,35 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// Customer Portal Login (public - no auth required)
+app.post('/api/customer-login', (req, res) => {
+    const { phone, pin } = req.body;
+
+    if (!phone) {
+        return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    db.get('SELECT * FROM customers WHERE phone = ?', [phone], (err, customer) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found. Please check your phone number.' });
+        }
+
+        // Generate JWT token for customer portal
+        const token = jwt.sign(
+            { customerId: customer.customer_id, name: customer.name, role: 'customer' },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        // In production, validate PIN against stored hash. For demo, accept any PIN.
+        res.json({ customer, token });
+    });
+});
+
 // Customers
 app.get('/api/customers', authenticateToken, (req, res) => {
     db.all('SELECT * FROM customers', [], (err, rows) => {
