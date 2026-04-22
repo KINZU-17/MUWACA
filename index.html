@@ -6,6 +6,7 @@
     <title>MUWACA Water Billing System</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <!-- AI Water Canvas Background -->
@@ -52,70 +53,80 @@
                     </path>
                 </svg>
             </div>
-            <h2>MUWACA</h2>
-            <p class="login-subtitle">Water Billing System</p>
-            
-            <form id="loginForm" aria-label="Login Form">
-                <div class="input-group">
-                    <label for="username" id="usernameLabel">Username</label>
-                    <div class="input-wrapper">
-                        <svg class="input-icon" viewBox="0 0 24 24" width="20" height="20">
-                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
-                        <input type="text" id="username" placeholder="Enter your username" required>
-                    </div>
-                </div>
-                
-                <div class="input-group">
-                    <label for="password" id="passwordLabel">Password</label>
-                    <div class="input-wrapper">
-                        <svg class="input-icon" viewBox="0 0 24 24" width="20" height="20">
-                            <path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                        </svg>
-                        <input type="password" id="password" placeholder="Enter your password" required>
-                        <button type="button" class="toggle-password" onclick="togglePassword()">
-                            <svg viewBox="0 0 24 24" width="20" height="20">
-                                <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="remember-forgot">
-                    <label class="remember-me">
-                        <input type="checkbox" id="rememberMe">
-                        <span class="checkmark"></span>
-                        Remember me
-                    </label>
-                    <a href="#" class="forgot-password">Forgot Password?</a>
-                </div>
-                
-                <button type="submit" class="login-btn" aria-label="Sign In">
-                    <span class="btn-text">Sign In</span>
-                    <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20">
-                        <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                    </svg>
-                </button>
-                
-                <p id="loginError" class="error-message"></p>
-            </form>
-            
-            <div class="demo-credentials">
-                <div class="demo-header">
-                    <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                    </svg>
-                    <span>Demo Credentials</span>
-                </div>
-                <div class="credential-row">
-                    <span class="credential-label">Username:</span>
-                    <code>admin</code>
-                </div>
-                <div class="credential-row">
-                    <span class="credential-label">Password:</span>
-                    <code>password123</code>
-                </div>
+            <div class="glass-user-avatar">
+                <i class="fa fa-user"></i>
             </div>
+            <form id="loginForm" class="glass-form glass-form-section active">
+                <h2>LOGIN</h2>
+                <p class="glass-warning">Please fill the input fields before proceeding</p>
+                <div class="glass-field">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <i class="fa fa-user"></i>
+                </div>
+
+                <div class="glass-field">
+                    <input type="password" id="password" placeholder="Password" required>
+                    <i class="fa fa-lock"></i>
+                </div>
+
+                <div class="glass-meta">
+                    <label><input type="checkbox"> Remember me</label>
+                    <a href="#" id="forgetPasswordLink">Forget Password?</a>
+                </div>
+
+                <div class="glass-btn-box">
+                    <button type="submit" id="vanishBtn">Login</button>
+                </div>
+
+                <p id="loginError" class="error-message"></p>
+
+                <p class="glass-footer">Don't have an Account? <a href="#" id="signUpLink">Sign up</a></p>
+            </form>
+
+            <form id="signUpForm" class="glass-form glass-form-section">
+                <h2>SIGN UP</h2>
+                <p class="glass-warning" id="signUpWarning"></p>
+                <div class="glass-field">
+                    <input type="email" id="signUpEmail" placeholder="Email" required>
+                    <i class="fa fa-envelope"></i>
+                </div>
+
+                <div class="glass-field">
+                    <input type="text" id="signUpUsername" placeholder="Username" required>
+                    <i class="fa fa-user"></i>
+                </div>
+
+                <div class="glass-field">
+                    <input type="password" id="signUpPassword" placeholder="Password" required>
+                    <i class="fa fa-lock"></i>
+                </div>
+
+                <div class="glass-field">
+                    <input type="password" id="signUpConfirmPassword" placeholder="Confirm Password" required>
+                    <i class="fa fa-lock"></i>
+                </div>
+
+                <div class="glass-btn-box">
+                    <button type="submit">Sign Up</button>
+                </div>
+
+                <p class="glass-footer">Already have an Account? <a href="#" id="loginLink">Login</a></p>
+            </form>
+
+            <form id="forgetPasswordForm" class="glass-form glass-form-section">
+                <h2>FORGET PASSWORD</h2>
+                <p class="glass-warning" id="forgetWarning"></p>
+                <div class="glass-field">
+                    <input type="email" id="forgetEmail" placeholder="Email" required>
+                    <i class="fa fa-envelope"></i>
+                </div>
+
+                <div class="glass-btn-box">
+                    <button type="submit">Reset Password</button>
+                </div>
+
+                <p class="glass-footer">Remember your password? <a href="#" id="backToLoginLink">Back to Login</a></p>
+            </form>
             
             <div class="login-footer">
                 <div class="customer-portal-link">
@@ -211,13 +222,13 @@
             
             <!-- Customer Tabs -->
             <div class="customer-tabs">
-                <button class="customer-tab active" onclick="showCustomerTab('bills')">My Bills</button>
-                <button class="customer-tab" onclick="showCustomerTab('payments')">Payment History</button>
-                <button class="customer-tab" onclick="showCustomerTab('paymentPortal')">Make Payment</button>
-                <button class="customer-tab" onclick="showCustomerTab('consumption')">Consumption</button>
-                <button class="customer-tab" onclick="showCustomerTab('services')">Service Requests</button>
-                <button class="customer-tab" onclick="showCustomerTab('profile')">My Profile</button>
-                <button class="customer-tab" onclick="showCustomerTab('support')">Support</button>
+                <button class="customer-tab active" onclick="showCustomerTab(event, 'bills')">My Bills</button>
+                <button class="customer-tab" onclick="showCustomerTab(event, 'payments')">Payment History</button>
+                <button class="customer-tab" onclick="showCustomerTab(event, 'paymentPortal')">Make Payment</button>
+                <button class="customer-tab" onclick="showCustomerTab(event, 'consumption')">Consumption</button>
+                <button class="customer-tab" onclick="showCustomerTab(event, 'services')">Service Requests</button>
+                <button class="customer-tab" onclick="showCustomerTab(event, 'profile')">My Profile</button>
+                <button class="customer-tab" onclick="showCustomerTab(event, 'support')">Support</button>
             </div>
             
             <!-- Customer Tab Content -->
@@ -612,20 +623,20 @@
                 <button type="submit">Generate Bill</button>
             </form>
             <button id="calculatePenalties">Calculate Penalties</button>
-            <div id="billingList"></div>
+            <div id="billList"></div>
         </section>
 
         <!-- Infrastructure -->
         <section id="infrastructure">
             <h2>Infrastructure</h2>
             <p>Manage water pipes, valves, maintenance, and repairs.</p>
-            <form id="infrastructureForm">
+            <form id="serviceForm">
                 <input type="hidden" id="serviceId">
-                <label for="customerNameInfra">Customer Name:</label>
-                <input type="text" id="customerNameInfra" list="customerNamesListInfra" required>
+                <label for="serviceCustomerName">Customer Name:</label>
+                <input type="text" id="serviceCustomerName" list="customerNamesListInfra" required>
                 <datalist id="customerNamesListInfra"></datalist>
-                <label for="service">Service Type:</label>
-                <select id="service" required>
+                <label for="serviceType">Service Type:</label>
+                <select id="serviceType" required>
                     <option value="pipe_installation">Pipe Installation</option>
                     <option value="meter_installation">Meter Installation</option>
                     <option value="maintenance">Maintenance</option>
@@ -640,8 +651,8 @@
                 </select>
                 <label for="scheduledDate">Scheduled Date:</label>
                 <input type="date" id="scheduledDate">
-                <label for="details">Details:</label>
-                <textarea id="details" required></textarea>
+                <label for="serviceDetails">Details:</label>
+                <textarea id="serviceDetails" required></textarea>
                 <button type="submit">Schedule Service</button>
             </form>
             <div id="serviceList"></div>

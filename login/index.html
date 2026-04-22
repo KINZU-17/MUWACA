@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Glitch Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="user-avatar">
+                <i class="fa fa-user"></i>
+            </div>
+            <form id="loginForm" class="form-section active">
+                <h2>LOGIN</h2>
+                <p class="warning">Please fill the input fields before proceeding</p>
+                <div class="field">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <i class="fa fa-user"></i>
+                </div>
+
+                <div class="field">
+                    <input type="password" id="password" placeholder="Password" required>
+                    <i class="fa fa-lock"></i>
+                </div>
+
+                <div class="meta">
+                    <label><input type="checkbox"> Remember me</label>
+                    <a href="#" id="forgetPasswordLink">Forget Password?</a>
+                </div>
+
+                <div class="btn-box">
+                    <button type="submit" id="vanishBtn">Login</button>
+                </div>
+
+                <p class="footer">Don't have an Account? <a href="#" id="signUpLink">Sign up</a></p>
+            </form>
+
+            <form id="signUpForm" class="form-section">
+                <h2>SIGN UP</h2>
+                <p class="warning" id="signUpWarning"></p>
+                <div class="field">
+                    <input type="email" id="signUpEmail" placeholder="Email" required>
+                    <i class="fa fa-envelope"></i>
+                </div>
+
+                <div class="field">
+                    <input type="text" id="signUpUsername" placeholder="Username" required>
+                    <i class="fa fa-user"></i>
+                </div>
+
+                <div class="field">
+                    <input type="password" id="signUpPassword" placeholder="Password" required>
+                    <i class="fa fa-lock"></i>
+                </div>
+
+                <div class="field">
+                    <input type="password" id="signUpConfirmPassword" placeholder="Confirm Password" required>
+                    <i class="fa fa-lock"></i>
+                </div>
+
+                <div class="btn-box">
+                    <button type="submit" id="signUpBtn">Sign Up</button>
+                </div>
+
+                <p class="footer">Already have an Account? <a href="#" id="loginLink">Login</a></p>
+            </form>
+
+            <form id="forgetPasswordForm" class="form-section">
+                <h2>FORGET PASSWORD</h2>
+                <p class="warning" id="forgetWarning"></p>
+                <div class="field">
+                    <input type="email" id="forgetEmail" placeholder="Email" required>
+                    <i class="fa fa-envelope"></i>
+                </div>
+
+                <div class="btn-box">
+                    <button type="submit" id="resetBtn">Reset Password</button>
+                </div>
+
+                <p class="footer">Remember your password? <a href="#" id="backToLoginLink">Login</a></p>
+            </form>
+        </div>
+    </div>
+    <script src="index.js"></script>
+</body>
+</html>

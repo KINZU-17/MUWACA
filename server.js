@@ -12,7 +12,7 @@ const https = require('https');
 const querystring = require('querystring');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'muwaca-water-billing-secret-key-2026';
 
 // M-Pesa Configuration
@@ -106,6 +106,7 @@ db.serialize(() => {
     // Users table for authentication
     db.run(`CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT DEFAULT 'admin',
@@ -116,6 +117,19 @@ db.serialize(() => {
     const defaultPassword = bcrypt.hashSync('password123', 10);
     db.run(`INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)`,
         ['admin', defaultPassword, 'admin']);
+
+    // Migrate existing database schema if needed
+    db.run(`ALTER TABLE users ADD COLUMN email TEXT`, [], (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('User table migration error:', err.message);
+        }
+    });
+
+    db.run(`ALTER TABLE bills ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, [], (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('Bills table migration error:', err.message);
+        }
+    });
 
     db.run(`CREATE TABLE IF NOT EXISTS customers (
         customer_id TEXT PRIMARY KEY,
@@ -318,6 +332,40 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// Sign Up
+app.post('/api/signup', (req, res) => {
+    const { email, username, password } = req.body;
+
+    // Input validation
+    if (!email || !username || !password) {
+        return res.status(400).json({ error: 'Email, username, and password are required' });
+    }
+
+    // Check if user already exists
+    db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username, email], (err, existingUser) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (existingUser) {
+            return res.status(409).json({ error: 'Username or email already exists' });
+        }
+
+        // Hash password
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
+        // Insert new user
+        db.run('INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, ?)', 
+            [email, username, hashedPassword, 'admin'], function(err) {
+            if (err) {
+                return res.status(500).json({ error: 'User creation error' });
+            }
+
+            res.status(201).json({ message: 'User created successfully' });
+        });
+    });
+});
+
 // Customer Portal Login (public - no auth required)
 app.post('/api/customer-login', (req, res) => {
     const { phone, pin } = req.body;
@@ -347,11 +395,50 @@ app.post('/api/customer-login', (req, res) => {
     });
 });
 
+// Dashboard
+app.get('/api/dashboard', authenticateToken, (req, res) => {
+    // Get dashboard statistics
+    const queries = {
+        totalCustomers: 'SELECT COUNT(*) as count FROM customers',
+        activeMeters: 'SELECT COUNT(*) as count FROM water_meters',
+        monthlyRevenue: 'SELECT SUM(paid_amount) as revenue FROM bills WHERE strftime(\'%Y-%m\', due_date) = strftime(\'%Y-%m\', \'now\') AND paid = 1',
+        overdueBills: 'SELECT COUNT(*) as count FROM bills WHERE paid = 0 AND due_date < date(\'now\')'
+    };
+
+    const results = {};
+
+    let completed = 0;
+    const total = Object.keys(queries).length;
+
+    Object.keys(queries).forEach(key => {
+        db.get(queries[key], [], (err, row) => {
+            if (err) {
+                console.error(`Error fetching ${key}:`, err);
+                results[key] = 0;
+            } else {
+                results[key] = row.count || row.revenue || 0;
+            }
+            completed++;
+            if (completed === total) {
+                res.json(results);
+            }
+        });
+    });
+});
+
 // Customers
 app.get('/api/customers', authenticateToken, (req, res) => {
     db.all('SELECT * FROM customers', [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
+    });
+});
+
+app.get('/api/customers/:id', authenticateToken, (req, res) => {
+    db.get('SELECT * FROM customers WHERE customer_id = ?', [req.params.id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: 'Customer not found' });
+        res.json(row);
     });
 });
 
@@ -410,6 +497,14 @@ app.get('/api/meters', authenticateToken, (req, res) => {
     });
 });
 
+app.get('/api/meters/:id', authenticateToken, (req, res) => {
+    db.get('SELECT * FROM water_meters WHERE meter_id = ?', [req.params.id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: 'Meter not found' });
+        res.json(row);
+    });
+});
+
 app.post('/api/meters', authenticateToken, (req, res) => {
     const { meter_id, customer_id, meter_number, previous_reading, current_reading, consumption_m3, reading_date } = req.body;
     
@@ -461,6 +556,14 @@ app.get('/api/bills', authenticateToken, (req, res) => {
     db.all('SELECT * FROM bills', [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
+    });
+});
+
+app.get('/api/bills/:id', authenticateToken, (req, res) => {
+    db.get('SELECT * FROM bills WHERE bill_id = ?', [req.params.id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: 'Bill not found' });
+        res.json(row);
     });
 });
 
@@ -537,6 +640,14 @@ app.get('/api/services', authenticateToken, (req, res) => {
     db.all('SELECT * FROM services', [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
+    });
+});
+
+app.get('/api/services/:id', authenticateToken, (req, res) => {
+    db.get('SELECT * FROM services WHERE service_id = ?', [req.params.id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: 'Service not found' });
+        res.json(row);
     });
 });
 

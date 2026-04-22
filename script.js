@@ -1,7 +1,7 @@
 // MUWACA Water Billing System - JavaScript with Backend API
 // FIXED VERSION: duplicate IDs, script path, togglePaid, overdue logic, report rendering
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'http://localhost:3001/api';
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 function checkLogin() {
@@ -22,30 +22,127 @@ function showMainContent() {
     loadDashboard();
 }
 
-document.getElementById('loginForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const errorMsg = document.getElementById('loginError');
+// Load dashboard data
+async function loadDashboard() {
     try {
-        const response = await fetch(`${API_BASE}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/dashboard`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
         if (response.ok) {
-            localStorage.setItem('authToken', data.token);
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            errorMsg.textContent = '';
-            showMainContent();
-        } else {
-            errorMsg.textContent = data.error || 'Invalid credentials';
+            document.getElementById('totalCustomers').textContent = data.totalCustomers || 0;
+            document.getElementById('activeMeters').textContent = data.activeMeters || 0;
+            document.getElementById('monthlyRevenue').textContent = `KES ${data.monthlyRevenue || 0}`;
+            document.getElementById('overdueBills').textContent = data.overdueBills || 0;
+            // Load charts if needed
         }
     } catch (error) {
-        errorMsg.textContent = 'Login failed. Please try again.';
+        console.error('Failed to load dashboard:', error);
     }
+}
+
+// Form switching functionality
+const loginForm = document.getElementById('loginForm');
+const signUpForm = document.getElementById('signUpForm');
+const forgetPasswordForm = document.getElementById('forgetPasswordForm');
+
+const signUpLink = document.getElementById('signUpLink');
+const loginLink = document.getElementById('loginLink');
+const forgetPasswordLink = document.getElementById('forgetPasswordLink');
+const backToLoginLink = document.getElementById('backToLoginLink');
+
+function showForm(formToShow) {
+    loginForm.classList.remove('active');
+    signUpForm.classList.remove('active');
+    forgetPasswordForm.classList.remove('active');
+    formToShow.classList.add('active');
+}
+
+if (signUpLink) signUpLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showForm(signUpForm);
+});
+
+if (loginLink) loginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showForm(loginForm);
+});
+
+if (forgetPasswordLink) forgetPasswordLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showForm(forgetPasswordForm);
+});
+
+if (backToLoginLink) backToLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showForm(loginForm);
+});
+
+// Vanishing button logic for admin login
+const loginBtn = document.getElementById('vanishBtn');
+const usernameInp = document.getElementById('username');
+const passwordInp = document.getElementById('password');
+
+loginBtn.addEventListener('mouseover', () => {
+    // Only vanish if fields are empty
+    if (usernameInp.value.trim() === "" || passwordInp.value.trim() === "") {
+        // Make it disappear instantly
+        loginBtn.style.opacity = '0';
+        loginBtn.style.pointerEvents = 'none'; // Prevent clicking while invisible
+
+        // Make it dramatic by reappearing after 600ms
+        setTimeout(() => {
+            loginBtn.classList.remove('pop-up'); // Reset animation
+            void loginBtn.offsetWidth;  // Trigger reflow to restart animation
+
+            loginBtn.style.opacity = '1';
+            loginBtn.style.pointerEvents = 'auto';
+
+            loginBtn.classList.add('pop-up'); // Play pop animation
+        }, 600);
+    }
+});
+
+document.getElementById('signUpForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('signUpEmail').value;
+    const username = document.getElementById('signUpUsername').value;
+    const password = document.getElementById('signUpPassword').value;
+    const confirmPassword = document.getElementById('signUpConfirmPassword').value;
+    const warning = document.getElementById('signUpWarning');
+
+    if (password !== confirmPassword) {
+        warning.textContent = 'Passwords do not match';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, username, password })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            warning.textContent = '';
+            alert('Account created successfully! Please login.');
+            showForm(loginForm);
+        } else {
+            warning.textContent = data.error || 'Sign up failed';
+        }
+    } catch (error) {
+        warning.textContent = 'Sign up failed. Please try again.';
+    }
+});
+
+document.getElementById('forgetPasswordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('forgetEmail').value;
+    const warning = document.getElementById('forgetWarning');
+
+    // Placeholder for forget password
+    warning.textContent = 'Password reset not implemented yet. Please contact admin.';
 });
 
 document.getElementById('logoutBtn').addEventListener('click', function() {
@@ -249,7 +346,7 @@ function initCustomerConsumptionChart(meters) {
     });
 }
 
-function showCustomerTab(tabId) {
+function showCustomerTab(event, tabId) {
     // Hide all tabs
     document.querySelectorAll('.customer-tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -259,8 +356,13 @@ function showCustomerTab(tabId) {
     });
     
     // Show selected tab
-    document.getElementById(`customer${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).classList.add('active');
-    event.target.classList.add('active');
+    const targetTab = document.getElementById(`customer${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
     
     // Load data for specific tabs
     if (tabId === 'services') {
@@ -319,18 +421,42 @@ function changePassword() {
     showToast('Password change feature coming soon!', 'info');
 }
 
-document.getElementById('supportForm').addEventListener('submit', async function(e) {
+document.getElementById('serviceRequestForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (!currentCustomer) return;
+    const data = {
+        service_id: Date.now().toString(),
+        customer_id: currentCustomer.customer_id,
+        service_type: document.getElementById('serviceType').value,
+        details: document.getElementById('serviceDetails').value,
+        scheduled_date: document.getElementById('preferredDate').value,
+        status: 'scheduled'
+    };
+    const token = localStorage.getItem('authToken');
+    try {
+        const res = await fetch(`${API_BASE}/services`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('Service request submitted successfully!', 'success');
+            this.reset();
+            loadCustomerServiceRequests();
+        } else {
+            showToast('Failed to submit service request.', 'error');
+        }
+    } catch {
+        showToast('Network error. Please try again.', 'error');
+    }
+});
+
+document.getElementById('supportForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const type = document.getElementById('supportType').value;
     const message = document.getElementById('supportMessage').value;
-    
-    // In production, this would send to backend
-    alert(`Support request submitted!
 
-Type: ${type}
-Message: ${message}
-
-We will contact you soon.`);
+    alert(`Support request submitted!\n\nType: ${type}\nMessage: ${message}\n\nWe will contact you soon.`);
     this.reset();
 });
 
@@ -721,9 +847,1378 @@ function initConsumptionChart(meters) {
     });
 }
 
-document.getElementById('checkOverdueBills').addEventListener('click', checkOverdueBills);
+// ── Customer Management Functions ────────────────────────────────────────────
+async function loadCustomers() {
+    try {
+        showSkeleton('customerList', 8);
+        const customers = await fetchData('/customers');
+        displayCustomers(customers);
+    } catch (error) {
+        console.error('Error loading customers:', error);
+        showToast('Failed to load customers', 'error');
+    }
+}
 
-// ── Navigation ───────────────────────────────────────────────────────────────
+function displayCustomers(customers) {
+    const container = document.getElementById('customerList');
+    if (!container) return;
+    
+    if (customers.length === 0) {
+        container.innerHTML = '<div class="no-data">No customers registered yet.</div>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="data-table">
+            <div class="table-header">
+                <h3>Registered Customers (${customers.length})</h3>
+                <div class="table-actions">
+                    <input type="text" id="customerSearch" placeholder="Search customers..." class="search-input">
+                    <button onclick="exportCustomers()" class="btn-export">Export to Excel</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Customer ID</th>
+                            <th>Name</th>
+                            <th>Contact Person</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${customers.map(customer => `
+                            <tr>
+                                <td>${customer.customer_id}</td>
+                                <td>${customer.name}</td>
+                                <td>${customer.contact_person || '-'}</td>
+                                <td>${customer.email || '-'}</td>
+                                <td>${customer.phone}</td>
+                                <td>${customer.address}</td>
+                                <td class="actions">
+                                    <button onclick="editCustomer('${customer.customer_id}')" class="btn-edit">Edit</button>
+                                    <button onclick="deleteCustomer('${customer.customer_id}')" class="btn-delete">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    // Add search functionality
+    document.getElementById('customerSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = container.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+}
+
+async function saveCustomer() {
+    const form = document.getElementById('customerForm');
+    const formData = new FormData(form);
+    
+    const customerData = {
+        customer_id: formData.get('customerId') || Date.now().toString(),
+        name: formData.get('customerName'),
+        contact_person: formData.get('contact'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        address: formData.get('address')
+    };
+    
+    try {
+        const isEdit = customerData.customer_id && customerData.customer_id !== '';
+        const url = isEdit ? `/customers/${customerData.customer_id}` : '/customers';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        await sendData(url, method, customerData);
+        
+        showToast(`Customer ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+        form.reset();
+        document.getElementById('customerId').value = '';
+        loadCustomers();
+    } catch (error) {
+        console.error('Error saving customer:', error);
+        showToast('Failed to save customer', 'error');
+    }
+}
+
+function editCustomer(customerId) {
+    fetchData(`/customers/${customerId}`).then(customer => {
+        document.getElementById('customerId').value = customer.customer_id;
+        document.getElementById('customerName').value = customer.name;
+        document.getElementById('contact').value = customer.contact_person || '';
+        document.getElementById('email').value = customer.email || '';
+        document.getElementById('phone').value = customer.phone;
+        document.getElementById('address').value = customer.address;
+        
+        // Scroll to form
+        document.getElementById('customerForm').scrollIntoView({ behavior: 'smooth' });
+    }).catch(error => {
+        console.error('Error loading customer:', error);
+        showToast('Failed to load customer details', 'error');
+    });
+}
+
+async function deleteCustomer(customerId) {
+    if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        await sendData(`/customers/${customerId}`, 'DELETE');
+        showToast('Customer deleted successfully!', 'success');
+        loadCustomers();
+    } catch (error) {
+        console.error('Error deleting customer:', error);
+        showToast('Failed to delete customer', 'error');
+    }
+}
+
+function exportCustomers() {
+    fetchData('/customers').then(customers => {
+        const csvContent = [
+            ['Customer ID', 'Name', 'Contact Person', 'Email', 'Phone', 'Address'],
+            ...customers.map(c => [c.customer_id, c.name, c.contact_person || '', c.email || '', c.phone, c.address])
+        ].map(row => row.join(',')).join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'customers.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Customers exported successfully!', 'success');
+    }).catch(error => {
+        console.error('Error exporting customers:', error);
+        showToast('Failed to export customers', 'error');
+    });
+}
+
+// ── Meter Management Functions ──────────────────────────────────────────────
+async function loadMeters() {
+    try {
+        showSkeleton('meterList', 8);
+        const [meters, customers] = await Promise.all([
+            fetchData('/meters'),
+            fetchData('/customers')
+        ]);
+        displayMeters(meters, customers);
+        populateCustomerDatalists(customers);
+    } catch (error) {
+        console.error('Error loading meters:', error);
+        showToast('Failed to load meters', 'error');
+    }
+}
+
+function displayMeters(meters, customers) {
+    const container = document.getElementById('meterList');
+    if (!container) return;
+    
+    if (meters.length === 0) {
+        container.innerHTML = '<div class="no-data">No meter readings recorded yet.</div>';
+        return;
+    }
+    
+    // Create customer lookup
+    const customerMap = {};
+    customers.forEach(c => customerMap[c.customer_id] = c.name);
+    
+    container.innerHTML = `
+        <div class="data-table">
+            <div class="table-header">
+                <h3>Meter Readings (${meters.length})</h3>
+                <div class="table-actions">
+                    <input type="text" id="meterSearch" placeholder="Search meters..." class="search-input">
+                    <button onclick="exportMeters()" class="btn-export">Export to Excel</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Meter ID</th>
+                            <th>Customer</th>
+                            <th>Meter Number</th>
+                            <th>Previous Reading</th>
+                            <th>Current Reading</th>
+                            <th>Consumption (m³)</th>
+                            <th>Reading Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${meters.map(meter => `
+                            <tr>
+                                <td>${meter.meter_id}</td>
+                                <td>${customerMap[meter.customer_id] || 'Unknown'}</td>
+                                <td>${meter.meter_number}</td>
+                                <td>${meter.previous_reading || 0} m³</td>
+                                <td>${meter.current_reading || 0} m³</td>
+                                <td>${meter.consumption_m3 || 0} m³</td>
+                                <td>${meter.reading_date ? new Date(meter.reading_date).toLocaleDateString() : '-'}</td>
+                                <td class="actions">
+                                    <button onclick="editMeter('${meter.meter_id}')" class="btn-edit">Edit</button>
+                                    <button onclick="deleteMeter('${meter.meter_id}')" class="btn-delete">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    // Add search functionality
+    document.getElementById('meterSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = container.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+}
+
+function populateCustomerDatalists(customers) {
+    const datalists = ['customerNamesList', 'customerNamesListBill'];
+    datalists.forEach(id => {
+        const datalist = document.getElementById(id);
+        if (datalist) {
+            datalist.innerHTML = customers.map(c => `<option value="${c.name}">`).join('');
+        }
+    });
+}
+
+async function saveMeter() {
+    const form = document.getElementById('meterForm');
+    const formData = new FormData(form);
+    
+    const previousReading = parseFloat(formData.get('previousReading')) || 0;
+    const currentReading = parseFloat(formData.get('currentReading')) || 0;
+    const consumption = currentReading - previousReading;
+    
+    // Find customer ID by name
+    const customerName = formData.get('meterCustomerName');
+    const customers = await fetchData('/customers');
+    const customer = customers.find(c => c.name === customerName);
+    
+    if (!customer) {
+        showToast('Customer not found. Please select a valid customer.', 'error');
+        return;
+    }
+    
+    const meterData = {
+        meter_id: formData.get('meterId') || Date.now().toString(),
+        customer_id: customer.customer_id,
+        meter_number: formData.get('meterNumber'),
+        previous_reading: previousReading,
+        current_reading: currentReading,
+        consumption_m3: consumption,
+        reading_date: formData.get('readingDate') || new Date().toISOString().split('T')[0]
+    };
+    
+    try {
+        const isEdit = meterData.meter_id && meterData.meter_id !== '';
+        const url = isEdit ? `/meters/${meterData.meter_id}` : '/meters';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        await sendData(url, method, meterData);
+        
+        showToast(`Meter reading ${isEdit ? 'updated' : 'recorded'} successfully!`, 'success');
+        form.reset();
+        document.getElementById('meterId').value = '';
+        loadMeters();
+    } catch (error) {
+        console.error('Error saving meter:', error);
+        showToast('Failed to save meter reading', 'error');
+    }
+}
+
+function editMeter(meterId) {
+    fetchData(`/meters/${meterId}`).then(meter => {
+        document.getElementById('meterId').value = meter.meter_id;
+        document.getElementById('meterCustomerName').value = meter.customer_name || '';
+        document.getElementById('meterNumber').value = meter.meter_number;
+        document.getElementById('previousReading').value = meter.previous_reading || 0;
+        document.getElementById('currentReading').value = meter.current_reading || 0;
+        document.getElementById('consumption').value = meter.consumption_m3 || 0;
+        document.getElementById('readingDate').value = meter.reading_date ? meter.reading_date.split('T')[0] : '';
+        
+        // Scroll to form
+        document.getElementById('meterForm').scrollIntoView({ behavior: 'smooth' });
+    }).catch(error => {
+        console.error('Error loading meter:', error);
+        showToast('Failed to load meter details', 'error');
+    });
+}
+
+async function deleteMeter(meterId) {
+    if (!confirm('Are you sure you want to delete this meter reading? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        await sendData(`/meters/${meterId}`, 'DELETE');
+        showToast('Meter reading deleted successfully!', 'success');
+        loadMeters();
+    } catch (error) {
+        console.error('Error deleting meter:', error);
+        showToast('Failed to delete meter reading', 'error');
+    }
+}
+
+function exportMeters() {
+    Promise.all([fetchData('/meters'), fetchData('/customers')]).then(([meters, customers]) => {
+        const customerMap = {};
+        customers.forEach(c => customerMap[c.customer_id] = c.name);
+        
+        const csvContent = [
+            ['Meter ID', 'Customer', 'Meter Number', 'Previous Reading', 'Current Reading', 'Consumption', 'Reading Date'],
+            ...meters.map(m => [
+                m.meter_id, 
+                customerMap[m.customer_id] || 'Unknown',
+                m.meter_number,
+                m.previous_reading || 0,
+                m.current_reading || 0,
+                m.consumption_m3 || 0,
+                m.reading_date || ''
+            ])
+        ].map(row => row.join(',')).join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'meters.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Meters exported successfully!', 'success');
+    }).catch(error => {
+        console.error('Error exporting meters:', error);
+        showToast('Failed to export meters', 'error');
+    });
+}
+
+// Calculate consumption when readings change
+document.getElementById('currentReading').addEventListener('input', function() {
+    const previous = parseFloat(document.getElementById('previousReading').value) || 0;
+    const current = parseFloat(this.value) || 0;
+    const consumption = Math.max(0, current - previous);
+    document.getElementById('consumption').value = consumption.toFixed(2);
+});
+
+// ── Financial Tracking Functions ────────────────────────────────────────────
+async function loadBills() {
+    try {
+        showSkeleton('billList', 8);
+        const [bills, customers] = await Promise.all([
+            fetchData('/bills'),
+            fetchData('/customers')
+        ]);
+        displayBills(bills, customers);
+    } catch (error) {
+        console.error('Error loading bills:', error);
+        showToast('Failed to load bills', 'error');
+    }
+}
+
+function displayBills(bills, customers) {
+    const container = document.getElementById('billList');
+    if (!container) return;
+    
+    if (bills.length === 0) {
+        container.innerHTML = '<div class="no-data">No bills generated yet.</div>';
+        return;
+    }
+    
+    // Create customer lookup
+    const customerMap = {};
+    customers.forEach(c => customerMap[c.customer_id] = c.name);
+    
+    container.innerHTML = `
+        <div class="data-table">
+            <div class="table-header">
+                <h3>Billing Records (${bills.length})</h3>
+                <div class="table-actions">
+                    <input type="text" id="billSearch" placeholder="Search bills..." class="search-input">
+                    <button onclick="generateBulkBills()" class="btn-generate">Generate Bills</button>
+                    <button onclick="exportBills()" class="btn-export">Export to Excel</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bill ID</th>
+                            <th>Customer</th>
+                            <th>Consumption Amount</th>
+                            <th>Maintenance Amount</th>
+                            <th>Total Payable</th>
+                            <th>Paid Amount</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bills.map(bill => {
+                            const status = bill.paid ? 'Paid' : 'Unpaid';
+                            const statusClass = bill.paid ? 'status-paid' : 'status-unpaid';
+                            const overdue = !bill.paid && new Date(bill.due_date) < new Date();
+                            
+                            return `
+                            <tr class="${overdue ? 'overdue' : ''}">
+                                <td>${bill.bill_id}</td>
+                                <td>${customerMap[bill.customer_id] || 'Unknown'}</td>
+                                <td>KES ${bill.consumption_amount ? bill.consumption_amount.toLocaleString() : '0'}</td>
+                                <td>KES ${bill.maintenance_amount ? bill.maintenance_amount.toLocaleString() : '0'}</td>
+                                <td>KES ${bill.total_payable_amount ? bill.total_payable_amount.toLocaleString() : '0'}</td>
+                                <td>KES ${bill.paid_amount ? bill.paid_amount.toLocaleString() : '0'}</td>
+                                <td>${bill.due_date ? new Date(bill.due_date).toLocaleDateString() : '-'}</td>
+                                <td><span class="status ${statusClass}">${status}</span></td>
+                                <td class="actions">
+                                    <button onclick="editBill('${bill.bill_id}')" class="btn-edit">Edit</button>
+                                    <button onclick="markAsPaid('${bill.bill_id}')" class="btn-paid">Mark Paid</button>
+                                    <button onclick="deleteBill('${bill.bill_id}')" class="btn-delete">Delete</button>
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    // Add search functionality
+    document.getElementById('billSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = container.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+}
+
+async function saveBill() {
+    const form = document.getElementById('billingForm');
+    const formData = new FormData(form);
+    
+    // Find customer ID by name
+    const customerName = formData.get('customerNameBill');
+    const customers = await fetchData('/customers');
+    const customer = customers.find(c => c.name === customerName);
+    
+    if (!customer) {
+        showToast('Customer not found. Please select a valid customer.', 'error');
+        return;
+    }
+    
+    const consumptionAmount = parseFloat(formData.get('consumptionAmount')) || 0;
+    const maintenanceAmount = parseFloat(formData.get('maintenanceAmount')) || 0;
+    const totalPayable = consumptionAmount + maintenanceAmount;
+    
+    const billData = {
+        bill_id: formData.get('billId') || Date.now().toString(),
+        customer_id: customer.customer_id,
+        previous_total_payable: parseFloat(formData.get('previousTotalPayable')) || 0,
+        previous_balance: parseFloat(formData.get('previousBalance')) || 0,
+        consumption_amount: consumptionAmount,
+        maintenance_amount: maintenanceAmount,
+        total_payable_amount: totalPayable,
+        paid_amount: parseFloat(formData.get('paidAmount')) || 0,
+        due_date: formData.get('dueDate'),
+        paid: formData.get('paid') === 'on'
+    };
+    
+    try {
+        const isEdit = billData.bill_id && billData.bill_id !== '';
+        const url = isEdit ? `/bills/${billData.bill_id}` : '/bills';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        await sendData(url, method, billData);
+        
+        showToast(`Bill ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+        form.reset();
+        document.getElementById('billId').value = '';
+        loadBills();
+    } catch (error) {
+        console.error('Error saving bill:', error);
+        showToast('Failed to save bill', 'error');
+    }
+}
+
+function editBill(billId) {
+    fetchData(`/bills/${billId}`).then(bill => {
+        document.getElementById('billId').value = bill.bill_id;
+        document.getElementById('customerNameBill').value = bill.customer_name || '';
+        document.getElementById('previousTotalPayable').value = bill.previous_total_payable || 0;
+        document.getElementById('previousBalance').value = bill.previous_balance || 0;
+        document.getElementById('consumptionAmount').value = bill.consumption_amount || 0;
+        document.getElementById('maintenanceAmount').value = bill.maintenance_amount || 0;
+        document.getElementById('totalPayableAmount').value = bill.total_payable_amount || 0;
+        document.getElementById('paidAmount').value = bill.paid_amount || 0;
+        document.getElementById('dueDate').value = bill.due_date ? bill.due_date.split('T')[0] : '';
+        document.getElementById('paid').checked = bill.paid;
+        
+        // Scroll to form
+        document.getElementById('billingForm').scrollIntoView({ behavior: 'smooth' });
+    }).catch(error => {
+        console.error('Error loading bill:', error);
+        showToast('Failed to load bill details', 'error');
+    });
+}
+
+async function markAsPaid(billId) {
+    try {
+        const bill = await fetchData(`/bills/${billId}`);
+        await sendData(`/bills/${billId}`, 'PUT', {
+            ...bill,
+            paid_amount: bill.total_payable_amount,
+            paid: 1
+        });
+        
+        showToast('Bill marked as paid!', 'success');
+        loadBills();
+    } catch (error) {
+        console.error('Error marking bill as paid:', error);
+        showToast('Failed to mark bill as paid', 'error');
+    }
+}
+
+async function deleteBill(billId) {
+    if (!confirm('Are you sure you want to delete this bill? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        await sendData(`/bills/${billId}`, 'DELETE');
+        showToast('Bill deleted successfully!', 'success');
+        loadBills();
+    } catch (error) {
+        console.error('Error deleting bill:', error);
+        showToast('Failed to delete bill', 'error');
+    }
+}
+
+async function generateBulkBills() {
+    if (!confirm('This will generate bills for all customers based on their latest meter readings. Continue?')) {
+        return;
+    }
+    
+    try {
+        showToast('Generating bills... This may take a moment.', 'info');
+        
+        // Get all customers and their latest meter readings
+        const [customers, meters] = await Promise.all([
+            fetchData('/customers'),
+            fetchData('/meters')
+        ]);
+        
+        // Get active rates
+        const rates = await fetchData('/rates/active');
+        const consumptionRate = rates.find(r => r.rate_type === 'consumption')?.rate_value || 50;
+        const maintenanceRate = rates.find(r => r.rate_type === 'maintenance')?.rate_value || 200;
+        
+        let generated = 0;
+        for (const customer of customers) {
+            // Get latest meter reading for customer
+            const customerMeters = meters.filter(m => m.customer_id === customer.customer_id)
+                .sort((a, b) => new Date(b.reading_date) - new Date(a.reading_date));
+            
+            if (customerMeters.length > 0) {
+                const latestMeter = customerMeters[0];
+                const consumptionAmount = latestMeter.consumption_m3 * consumptionRate;
+                
+                const billData = {
+                    bill_id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    customer_id: customer.customer_id,
+                    consumption_amount: consumptionAmount,
+                    maintenance_amount: maintenanceRate,
+                    total_payable_amount: consumptionAmount + maintenanceRate,
+                    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+                    paid: 0
+                };
+                
+                await sendData('/bills', 'POST', billData);
+                generated++;
+            }
+        }
+        
+        showToast(`Generated ${generated} bills successfully!`, 'success');
+        loadBills();
+    } catch (error) {
+        console.error('Error generating bills:', error);
+        showToast('Failed to generate bills', 'error');
+    }
+}
+
+function exportBills() {
+    Promise.all([fetchData('/bills'), fetchData('/customers')]).then(([bills, customers]) => {
+        const customerMap = {};
+        customers.forEach(c => customerMap[c.customer_id] = c.name);
+        
+        const csvContent = [
+            ['Bill ID', 'Customer', 'Consumption Amount', 'Maintenance Amount', 'Total Payable', 'Paid Amount', 'Due Date', 'Status'],
+            ...bills.map(b => [
+                b.bill_id,
+                customerMap[b.customer_id] || 'Unknown',
+                b.consumption_amount || 0,
+                b.maintenance_amount || 0,
+                b.total_payable_amount || 0,
+                b.paid_amount || 0,
+                b.due_date || '',
+                b.paid ? 'Paid' : 'Unpaid'
+            ])
+        ].map(row => row.join(',')).join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bills.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Bills exported successfully!', 'success');
+    }).catch(error => {
+        console.error('Error exporting bills:', error);
+        showToast('Failed to export bills', 'error');
+    });
+}
+
+// ── Infrastructure Management Functions ─────────────────────────────────────
+async function loadServices() {
+    try {
+        showSkeleton('serviceList', 8);
+        const [services, customers] = await Promise.all([
+            fetchData('/services'),
+            fetchData('/customers')
+        ]);
+        displayServices(services, customers);
+    } catch (error) {
+        console.error('Error loading services:', error);
+        showToast('Failed to load services', 'error');
+    }
+}
+
+function displayServices(services, customers) {
+    const container = document.getElementById('serviceList');
+    if (!container) return;
+    
+    if (services.length === 0) {
+        container.innerHTML = '<div class="no-data">No service requests scheduled yet.</div>';
+        return;
+    }
+    
+    // Create customer lookup
+    const customerMap = {};
+    customers.forEach(c => customerMap[c.customer_id] = c.name);
+    
+    const statusColors = {
+        'scheduled': 'status-scheduled',
+        'in_progress': 'status-progress',
+        'completed': 'status-completed',
+        'cancelled': 'status-cancelled'
+    };
+    
+    container.innerHTML = `
+        <div class="data-table">
+            <div class="table-header">
+                <h3>Service Requests (${services.length})</h3>
+                <div class="table-actions">
+                    <input type="text" id="serviceSearch" placeholder="Search services..." class="search-input">
+                    <button onclick="exportServices()" class="btn-export">Export to Excel</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Service ID</th>
+                            <th>Customer</th>
+                            <th>Service Type</th>
+                            <th>Details</th>
+                            <th>Status</th>
+                            <th>Scheduled Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${services.map(service => `
+                            <tr>
+                                <td>${service.service_id}</td>
+                                <td>${customerMap[service.customer_id] || 'Unknown'}</td>
+                                <td>${service.service_type.replace('_', ' ').toUpperCase()}</td>
+                                <td>${service.details}</td>
+                                <td><span class="status ${statusColors[service.status] || 'status-scheduled'}">${service.status.replace('_', ' ').toUpperCase()}</span></td>
+                                <td>${service.scheduled_date ? new Date(service.scheduled_date).toLocaleDateString() : '-'}</td>
+                                <td class="actions">
+                                    <button onclick="editService('${service.service_id}')" class="btn-edit">Edit</button>
+                                    <button onclick="updateServiceStatus('${service.service_id}', 'completed')" class="btn-complete">Complete</button>
+                                    <button onclick="deleteService('${service.service_id}')" class="btn-delete">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    // Add search functionality
+    document.getElementById('serviceSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = container.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+}
+
+async function saveService() {
+    const form = document.getElementById('serviceForm');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    
+    // Find customer ID by name
+    const customerName = formData.get('serviceCustomerName');
+    const customers = await fetchData('/customers');
+    const customer = customers.find(c => c.name === customerName);
+    
+    if (!customer) {
+        showToast('Customer not found. Please select a valid customer.', 'error');
+        return;
+    }
+    
+    const serviceData = {
+        service_id: formData.get('serviceId') || Date.now().toString(),
+        customer_id: customer.customer_id,
+        service_type: formData.get('serviceType'),
+        details: formData.get('serviceDetails'),
+        status: formData.get('serviceStatus') || 'scheduled',
+        scheduled_date: formData.get('scheduledDate') || null
+    };
+    
+    try {
+        const isEdit = serviceData.service_id && serviceData.service_id !== '';
+        const url = isEdit ? `/services/${serviceData.service_id}` : '/services';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        await sendData(url, method, serviceData);
+        
+        showToast(`Service ${isEdit ? 'updated' : 'scheduled'} successfully!`, 'success');
+        form.reset();
+        document.getElementById('serviceId').value = '';
+        loadServices();
+    } catch (error) {
+        console.error('Error saving service:', error);
+        showToast('Failed to save service', 'error');
+    }
+}
+
+function editService(serviceId) {
+    fetchData(`/services/${serviceId}`).then(service => {
+        // Assuming there's a service form in the infrastructure section
+        const form = document.getElementById('serviceForm');
+        if (form) {
+            document.getElementById('serviceId').value = service.service_id;
+            document.getElementById('serviceCustomerName').value = service.customer_name || '';
+            document.getElementById('serviceType').value = service.service_type;
+            document.getElementById('serviceDetails').value = service.details;
+            document.getElementById('serviceStatus').value = service.status;
+            document.getElementById('scheduledDate').value = service.scheduled_date ? service.scheduled_date.split('T')[0] : '';
+            
+            // Scroll to form
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+    }).catch(error => {
+        console.error('Error loading service:', error);
+        showToast('Failed to load service details', 'error');
+    });
+}
+
+async function updateServiceStatus(serviceId, newStatus) {
+    try {
+        const service = await fetchData(`/services/${serviceId}`);
+        await sendData(`/services/${serviceId}`, 'PUT', {
+            ...service,
+            status: newStatus
+        });
+        
+        showToast(`Service marked as ${newStatus}!`, 'success');
+        loadServices();
+    } catch (error) {
+        console.error('Error updating service status:', error);
+        showToast('Failed to update service status', 'error');
+    }
+}
+
+async function deleteService(serviceId) {
+    if (!confirm('Are you sure you want to delete this service request? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        await sendData(`/services/${serviceId}`, 'DELETE');
+        showToast('Service deleted successfully!', 'success');
+        loadServices();
+    } catch (error) {
+        console.error('Error deleting service:', error);
+        showToast('Failed to delete service', 'error');
+    }
+}
+
+// ── Reports Functions ─────────────────────────────────────────────────────
+async function loadReports() {
+    // Initialize report buttons
+    document.getElementById('paymentHistory').addEventListener('click', generatePaymentHistory);
+    document.getElementById('disconnectedClients').addEventListener('click', generateDisconnectedClients);
+    document.getElementById('revenueAnalytics').addEventListener('click', generateRevenueAnalytics);
+    document.getElementById('consumptionAnalytics').addEventListener('click', generateConsumptionAnalytics);
+    
+    // Initialize export buttons
+    document.getElementById('exportPaymentPdf').addEventListener('click', () => exportReport('payment', 'pdf'));
+    document.getElementById('exportPaymentExcel').addEventListener('click', () => exportReport('payment', 'excel'));
+    document.getElementById('exportDisconnectedPdf').addEventListener('click', () => exportReport('disconnected', 'pdf'));
+    document.getElementById('exportRevenuePdf').addEventListener('click', () => exportReport('revenue', 'pdf'));
+    document.getElementById('exportJson').addEventListener('click', exportFullDataJson);
+    document.getElementById('backupDb').addEventListener('click', backupDatabase);
+    
+    // Load default report
+    generatePaymentHistory();
+}
+
+async function generatePaymentHistory() {
+    try {
+        const [bills, customers] = await Promise.all([
+            fetchData('/bills'),
+            fetchData('/customers')
+        ]);
+        
+        const customerMap = {};
+        customers.forEach(c => customerMap[c.customer_id] = c.name);
+        
+        const paidBills = bills.filter(b => b.paid).sort((a, b) => new Date(b.due_date) - new Date(a.due_date));
+        
+        const reportHTML = `
+            <div class="report-container">
+                <h3>Payment History Report</h3>
+                <div class="report-meta">
+                    <span>Total Payments: ${paidBills.length}</span>
+                    <span>Total Amount: KES ${paidBills.reduce((sum, b) => sum + (b.paid_amount || 0), 0).toLocaleString()}</span>
+                    <span>Generated: ${new Date().toLocaleString()}</span>
+                </div>
+                <div class="report-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Bill ID</th>
+                                <th>Amount Paid</th>
+                                <th>Payment Method</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${paidBills.map(bill => `
+                                <tr>
+                                    <td>${new Date(bill.due_date).toLocaleDateString()}</td>
+                                    <td>${customerMap[bill.customer_id] || 'Unknown'}</td>
+                                    <td>${bill.bill_id}</td>
+                                    <td>KES ${bill.paid_amount ? bill.paid_amount.toLocaleString() : '0'}</td>
+                                    <td>M-Pesa/Cash</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('reportOutput').innerHTML = reportHTML;
+        showToast('Payment history report generated!', 'success');
+    } catch (error) {
+        console.error('Error generating payment history:', error);
+        showToast('Failed to generate payment history', 'error');
+    }
+}
+
+async function generateDisconnectedClients() {
+    try {
+        const [bills, customers] = await Promise.all([
+            fetchData('/bills'),
+            fetchData('/customers')
+        ]);
+        
+        const customerMap = {};
+        customers.forEach(c => {
+            customerMap[c.customer_id] = c;
+        });
+        
+        // Find customers with overdue bills (more than 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const disconnectedCustomers = [];
+        bills.forEach(bill => {
+            if (!bill.paid && new Date(bill.due_date) < thirtyDaysAgo) {
+                const customer = customerMap[bill.customer_id];
+                if (customer && !disconnectedCustomers.find(dc => dc.customer_id === customer.customer_id)) {
+                    disconnectedCustomers.push({
+                        ...customer,
+                        overdueAmount: bill.total_payable_amount,
+                        daysOverdue: Math.floor((new Date() - new Date(bill.due_date)) / (1000 * 60 * 60 * 24))
+                    });
+                }
+            }
+        });
+        
+        const reportHTML = `
+            <div class="report-container">
+                <h3>Disconnected Clients Report</h3>
+                <div class="report-meta">
+                    <span>Clients to Disconnect: ${disconnectedCustomers.length}</span>
+                    <span>Total Overdue: KES ${disconnectedCustomers.reduce((sum, c) => sum + (c.overdueAmount || 0), 0).toLocaleString()}</span>
+                    <span>Generated: ${new Date().toLocaleString()}</span>
+                </div>
+                <div class="report-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer ID</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Overdue Amount</th>
+                                <th>Days Overdue</th>
+                                <th>Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${disconnectedCustomers.map(customer => `
+                                <tr>
+                                    <td>${customer.customer_id}</td>
+                                    <td>${customer.name}</td>
+                                    <td>${customer.phone}</td>
+                                    <td>KES ${customer.overdueAmount ? customer.overdueAmount.toLocaleString() : '0'}</td>
+                                    <td>${customer.daysOverdue}</td>
+                                    <td>${customer.address}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('reportOutput').innerHTML = reportHTML;
+        showToast('Disconnected clients report generated!', 'success');
+    } catch (error) {
+        console.error('Error generating disconnected clients:', error);
+        showToast('Failed to generate disconnected clients report', 'error');
+    }
+}
+
+async function generateRevenueAnalytics() {
+    try {
+        const bills = await fetchData('/bills');
+        
+        // Calculate monthly revenue for the last 12 months
+        const monthlyRevenue = {};
+        bills.filter(b => b.paid).forEach(bill => {
+            const date = new Date(bill.due_date);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + (bill.paid_amount || 0);
+        });
+        
+        const months = Object.keys(monthlyRevenue).sort().slice(-12);
+        const revenueData = months.map(month => monthlyRevenue[month]);
+        
+        const totalRevenue = revenueData.reduce((sum, rev) => sum + rev, 0);
+        const avgMonthly = revenueData.length > 0 ? totalRevenue / revenueData.length : 0;
+        
+        const reportHTML = `
+            <div class="report-container">
+                <h3>Revenue Analytics Report</h3>
+                <div class="report-meta">
+                    <span>Total Revenue (12 months): KES ${totalRevenue.toLocaleString()}</span>
+                    <span>Average Monthly: KES ${avgMonthly.toLocaleString()}</span>
+                    <span>Generated: ${new Date().toLocaleString()}</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="revenueReportChart"></canvas>
+                </div>
+                <div class="report-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Revenue</th>
+                                <th>Growth %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${months.map((month, index) => {
+                                const revenue = revenueData[index];
+                                const prevRevenue = index > 0 ? revenueData[index - 1] : 0;
+                                const growth = prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue * 100).toFixed(1) : 'N/A';
+                                return `
+                                    <tr>
+                                        <td>${month}</td>
+                                        <td>KES ${revenue.toLocaleString()}</td>
+                                        <td>${growth === 'N/A' ? 'N/A' : growth + '%'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('reportOutput').innerHTML = reportHTML;
+        
+        // Create chart
+        setTimeout(() => {
+            const ctx = document.getElementById('revenueReportChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Monthly Revenue',
+                            data: revenueData,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'KES ' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }, 100);
+        
+        showToast('Revenue analytics report generated!', 'success');
+    } catch (error) {
+        console.error('Error generating revenue analytics:', error);
+        showToast('Failed to generate revenue analytics', 'error');
+    }
+}
+
+async function generateConsumptionAnalytics() {
+    try {
+        const [meters, customers] = await Promise.all([
+            fetchData('/meters'),
+            fetchData('/customers')
+        ]);
+        
+        const customerMap = {};
+        customers.forEach(c => customerMap[c.customer_id] = c.name);
+        
+        // Calculate consumption by customer
+        const consumptionByCustomer = {};
+        meters.forEach(meter => {
+            const customerId = meter.customer_id;
+            if (!consumptionByCustomer[customerId]) {
+                consumptionByCustomer[customerId] = {
+                    name: customerMap[customerId] || 'Unknown',
+                    totalConsumption: 0,
+                    readingCount: 0
+                };
+            }
+            consumptionByCustomer[customerId].totalConsumption += meter.consumption_m3 || 0;
+            consumptionByCustomer[customerId].readingCount++;
+        });
+        
+        const sortedCustomers = Object.values(consumptionByCustomer)
+            .sort((a, b) => b.totalConsumption - a.totalConsumption);
+        
+        const reportHTML = `
+            <div class="report-container">
+                <h3>Consumption Analytics Report</h3>
+                <div class="report-meta">
+                    <span>Total Customers: ${sortedCustomers.length}</span>
+                    <span>Total Consumption: ${sortedCustomers.reduce((sum, c) => sum + c.totalConsumption, 0).toFixed(2)} m³</span>
+                    <span>Generated: ${new Date().toLocaleString()}</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="consumptionReportChart"></canvas>
+                </div>
+                <div class="report-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Total Consumption (m³)</th>
+                                <th>Readings</th>
+                                <th>Avg per Reading</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedCustomers.map(customer => `
+                                <tr>
+                                    <td>${customer.name}</td>
+                                    <td>${customer.totalConsumption.toFixed(2)}</td>
+                                    <td>${customer.readingCount}</td>
+                                    <td>${(customer.totalConsumption / customer.readingCount).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('reportOutput').innerHTML = reportHTML;
+        
+        // Create chart
+        setTimeout(() => {
+            const ctx = document.getElementById('consumptionReportChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedCustomers.slice(0, 10).map(c => c.name),
+                        datasets: [{
+                            label: 'Consumption (m³)',
+                            data: sortedCustomers.slice(0, 10).map(c => c.totalConsumption),
+                            backgroundColor: 'rgba(6, 182, 212, 0.7)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + ' m³';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }, 100);
+        
+        showToast('Consumption analytics report generated!', 'success');
+    } catch (error) {
+        console.error('Error generating consumption analytics:', error);
+        showToast('Failed to generate consumption analytics', 'error');
+    }
+}
+
+function printReport() {
+    window.print();
+}
+
+async function exportReport(type, format) {
+    try {
+        showToast(`Exporting ${type} report as ${format.toUpperCase()}...`, 'info');
+        
+        // For now, just export as CSV since PDF would require additional libraries
+        // In production, you'd use libraries like pdfkit or puppeteer
+        let data = [];
+        let filename = '';
+        
+        switch (type) {
+            case 'payment':
+                const bills = await fetchData('/bills');
+                data = bills.filter(b => b.paid);
+                filename = 'payment_history.csv';
+                break;
+            case 'disconnected':
+                // This would require more complex logic to identify disconnected customers
+                showToast('Disconnected customers export coming soon!', 'info');
+                return;
+            case 'revenue':
+                const revenueBills = await fetchData('/bills');
+                data = revenueBills;
+                filename = 'revenue_analytics.csv';
+                break;
+        }
+        
+        if (data.length > 0) {
+            const csvContent = [
+                Object.keys(data[0]).join(','),
+                ...data.map(row => Object.values(row).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showToast(`${type} report exported successfully!`, 'success');
+        }
+    } catch (error) {
+        console.error('Error exporting report:', error);
+        showToast('Failed to export report', 'error');
+    }
+}
+
+async function exportFullDataJson() {
+    try {
+        showToast('Exporting full database...', 'info');
+        
+        const [customers, meters, bills, services] = await Promise.all([
+            fetchData('/customers'),
+            fetchData('/meters'),
+            fetchData('/bills'),
+            fetchData('/services')
+        ]);
+        
+        const fullData = {
+            exportDate: new Date().toISOString(),
+            customers,
+            meters,
+            bills,
+            services
+        };
+        
+        const jsonContent = JSON.stringify(fullData, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `muwaca_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Full database exported successfully!', 'success');
+    } catch (error) {
+        console.error('Error exporting full data:', error);
+        showToast('Failed to export full data', 'error');
+    }
+}
+
+async function backupDatabase() {
+    // In a real application, this would trigger a server-side backup
+    // For now, just export the data
+    await exportFullDataJson();
+    showToast('Database backup completed!', 'success');
+}
+
+// Service form event listener
+document.getElementById('serviceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveService();
+});
+
+// Calculate penalties event listener
+document.getElementById('calculatePenalties').addEventListener('click', async function() {
+    try {
+        showToast('Calculating penalties...', 'info');
+        await sendData('/calculate-penalties', 'POST');
+        showToast('Penalties calculated successfully!', 'success');
+        loadBills(); // Refresh the bills list
+    } catch (error) {
+        console.error('Error calculating penalties:', error);
+        showToast('Failed to calculate penalties', 'error');
+    }
+});
+
+// Check overdue bills function
+async function checkOverdueBills() {
+    try {
+        showToast('Checking overdue bills...', 'info');
+        await sendData('/calculate-penalties', 'POST');
+        showToast('Overdue bills checked and penalties calculated!', 'success');
+        loadDashboard(); // Refresh dashboard stats
+    } catch (error) {
+        console.error('Error checking overdue bills:', error);
+        showToast('Failed to check overdue bills', 'error');
+    }
+}
+function showSection(sectionId) {
+    // Hide all sections
+    document.querySelectorAll('main section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all nav buttons
+    document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        
+        // Add active class to corresponding nav button
+        const navBtn = document.getElementById(sectionId + 'Btn');
+        if (navBtn) {
+            navBtn.classList.add('active');
+        }
+        
+        // Load data for specific sections
+        switch(sectionId) {
+            case 'home':
+                loadDashboard();
+                break;
+            case 'customers':
+                loadCustomers();
+                break;
+            case 'meters':
+                loadMeters();
+                break;
+            case 'financial':
+                loadBills();
+                break;
+            case 'infrastructure':
+                loadServices();
+                break;
+            case 'reports':
+                loadReports();
+                break;
+        }
+    }
+}
+
 document.getElementById('homeBtn').addEventListener('click', () => showSection('home'));
 document.getElementById('customerBtn').addEventListener('click', () => showSection('customers'));
 document.getElementById('meterBtn').addEventListener('click', () => showSection('meters'));
@@ -967,15 +2462,6 @@ async function populateCustomerNameLists() {
 }
 
 // ── Section Navigation ───────────────────────────────────────────────────────
-function showSection(sectionId) {
-    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
-    if (sectionId === 'home') loadDashboard();
-    if (sectionId === 'customers') displayCustomers();
-    if (sectionId === 'meters') { populateCustomerNameLists(); displayMeters(); }
-    if (sectionId === 'financial') { populateCustomerNameLists(); displayBills(); }
-    if (sectionId === 'infrastructure') { populateCustomerNameLists(); displayServices(); }
-}
 
 // ── Loading States ──────────────────────────────────────────────────────────
 function showLoading(elementId) {
@@ -1230,31 +2716,6 @@ document.getElementById('calculatePenalties').addEventListener('click', async fu
     displayBills();
 });
 
-// ── Infrastructure Services ──────────────────────────────────────────────────
-document.getElementById('infrastructureForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const serviceId = document.getElementById('serviceId').value;
-    const customerName = document.getElementById('customerNameInfra').value;
-    const customers = await fetchData('/customers');
-    const customer = customers.find(c => c.name === customerName);
-    if (!customer) { addNotification('error', 'Error', 'Please select a valid customer.'); return; }
-    const data = {
-        service_id: serviceId || Date.now().toString(),
-        customer_id: customer.customer_id,
-        service_type: document.getElementById('service').value,
-        details: document.getElementById('details').value
-    };
-    if (serviceId) {
-        await sendData(`/services/${serviceId}`, 'PUT', data);
-    } else {
-        await sendData('/services', 'POST', data);
-        addNotification('success', 'Service Scheduled', `${data.service_type} scheduled for ${customer.name}.`);
-    }
-    document.getElementById('serviceId').value = '';
-    this.reset();
-    displayServices();
-});
-
 // ── Reports ──────────────────────────────────────────────────────────────────
 document.getElementById('paymentHistory').addEventListener('click', async function() {
     const bills = await fetchData('/reports/payment-history');
@@ -1268,11 +2729,51 @@ document.getElementById('disconnectedClients').addEventListener('click', async f
     displayDisconnectedReport(customers, bills);
 });
 
+document.getElementById('consumptionAnalytics').addEventListener('click', async function() {
+    const data = await fetchData('/reports/consumption-analytics');
+    displayConsumptionReport(data);
+});
+
 document.getElementById('revenueAnalytics').addEventListener('click', async function() {
     const data = await fetchData('/reports/revenue-analytics');
     const prevMonth = await fetchData('/reports/revenue-previous-month');
     displayRevenueReport(data, prevMonth);
 });
+
+// ── Export Buttons ────────────────────────────────────────────────────────────
+document.getElementById('exportPaymentPdf').addEventListener('click', () => window.open(`${API_BASE}/export/payment-history/pdf`, '_blank'));
+document.getElementById('exportPaymentExcel').addEventListener('click', () => window.open(`${API_BASE}/export/payment-history/excel`, '_blank'));
+document.getElementById('exportDisconnectedPdf').addEventListener('click', () => window.open(`${API_BASE}/export/disconnected-customers/pdf`, '_blank'));
+document.getElementById('exportRevenuePdf').addEventListener('click', () => window.open(`${API_BASE}/export/revenue-analytics/pdf`, '_blank'));
+document.getElementById('exportJson').addEventListener('click', () => window.open(`${API_BASE}/export/json`, '_blank'));
+document.getElementById('backupDb').addEventListener('click', () => window.open(`${API_BASE}/backup`, '_blank'));
+
+function displayConsumptionReport(data) {
+    const output = document.getElementById('reportOutput');
+    if (!data || data.length === 0) {
+        output.innerHTML = reportHeader('Consumption Analytics Report') + '<p class="report-empty">No consumption data found.</p>';
+        return;
+    }
+    const totalConsumption = data.reduce((s, r) => s + (r.total_consumption || 0), 0);
+    const rows = data.map(r => `<tr>
+        <td>${r.customer_id}</td>
+        <td>${r.name}</td>
+        <td>${(r.total_consumption || 0).toFixed(2)} m³</td>
+        <td>${(r.avg_consumption || 0).toFixed(2)} m³</td>
+        <td>${(r.max_consumption || 0).toFixed(2)} m³</td>
+        <td>${r.reading_count}</td>
+    </tr>`).join('');
+    output.innerHTML = reportHeader('Consumption Analytics Report', `${data.length} customer(s)`) + `
+        <div class="report-summary">
+            <div class="summary-card"><div class="summary-label">Total Consumption</div><div class="summary-value">${totalConsumption.toFixed(2)} m³</div></div>
+            <div class="summary-card"><div class="summary-label">Customers Tracked</div><div class="summary-value">${data.length}</div></div>
+        </div>
+        <table class="report-table">
+            <thead><tr><th>ID</th><th>Customer</th><th>Total (m³)</th><th>Avg (m³)</th><th>Max (m³)</th><th>Readings</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div class="report-footer">End of Consumption Analytics Report — MUWACA Water Enterprises</div>`;
+}
 
 // ── Report Renderers (proper formatted HTML, not raw JSON) ───────────────────
 function reportHeader(title, subtitle) {
@@ -1748,15 +3249,17 @@ async function editBill(id) {
 async function editService(id) {
     const services = await fetchData('/services');
     const customers = await fetchData('/customers');
-    const s = services.find(s => s.service_id === id);
-    if (s) {
-        const customer = customers.find(c => c.customer_id === s.customer_id);
-        document.getElementById('serviceId').value = s.service_id;
-        document.getElementById('customerNameInfra').value = customer ? customer.name : '';
-        document.getElementById('service').value = s.service_type;
-        document.getElementById('details').value = s.details;
+    const service = services.find(item => item.service_id === id);
+    if (service) {
+        const customer = customers.find(c => c.customer_id === service.customer_id);
+        document.getElementById('serviceId').value = service.service_id;
+        document.getElementById('serviceCustomerName').value = customer ? customer.name : '';
+        document.getElementById('serviceType').value = service.service_type;
+        document.getElementById('serviceDetails').value = service.details;
+        document.getElementById('serviceStatus').value = service.status || 'scheduled';
+        document.getElementById('scheduledDate').value = service.scheduled_date ? service.scheduled_date.split('T')[0] : '';
         showSection('infrastructure');
-        document.getElementById('infrastructureForm').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('serviceForm').scrollIntoView({ behavior: 'smooth' });
     }
 }
 
