@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
@@ -10,6 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const querystring = require('querystring');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -44,54 +47,47 @@ const EMAIL_CONFIG = {
     from: process.env.EMAIL_FROM || 'MUWACA Water <noreply@muwaca.com>'
 };
 
+// Security Middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            connectSrc: ["'self'"]
+        }
+    },
+    crossOriginEmbedderPolicy: false
+}));
+
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
 app.use(express.static('.')); // Serve static files
 
-// Rate limiting middleware
-const rateLimit = (windowMs, maxRequests) => {
-    const requests = new Map();
-    
-    return (req, res, next) => {
-        const ip = req.ip || req.connection.remoteAddress;
-        const now = Date.now();
-        
-        if (!requests.has(ip)) {
-            requests.set(ip, { count: 1, resetTime: now + windowMs });
-        } else {
-            const requestData = requests.get(ip);
-            if (now > requestData.resetTime) {
-                requestData.count = 1;
-                requestData.resetTime = now + windowMs;
-            } else {
-                requestData.count++;
-            }
-            
-            if (requestData.count > maxRequests) {
-                return res.status(429).json({ 
-                    error: 'Too many requests. Please try again later.',
-                    retryAfter: Math.ceil((requestData.resetTime - now) / 1000)
-                });
-            }
-        }
-        
-        next();
-    };
-};
-
-// Apply rate limiting to API endpoints
-app.use('/api/', rateLimit(15 * 60 * 1000, 100)); // 100 requests per 15 minutes
-app.use('/api/login', rateLimit(15 * 60 * 1000, 5)); // 5 login attempts per 15 minutes
-
-// Security headers
-app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    next();
+// Rate limiting
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    message: { error: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
 });
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 login attempts
+    message: { error: 'Too many login attempts, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply rate limits to API routes
+app.use('/api/', apiLimiter);
+app.use('/api/login', loginLimiter);
+app.use('/api/signup', loginLimiter);
 
 // Database setup
 const db = new sqlite3.Database('./muwaca.db', (err) => {
@@ -125,9 +121,12 @@ db.serialize(() => {
         }
     });
 
-    db.run(`ALTER TABLE bills ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, [], (err) => {
+    db.run(`ALTER TABLE bills ADD COLUMN created_at DATETIME`, [], (err) => {
         if (err && !err.message.includes('duplicate column name')) {
             console.error('Bills table migration error:', err.message);
+        } else {
+            // Set default value for existing rows
+            db.run(`UPDATE bills SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL`);
         }
     });
 
@@ -1144,7 +1143,15 @@ app.get('/api/reports/revenue-previous-month', authenticateToken, (req, res) => 
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log('╔══════════════════════════════════════════════════════════════╗');
+    console.log('║                    MUWACA WATER BILLING                     ║');
+    console.log('║                    Application Started                       ║');
+    console.log('╠══════════════════════════════════════════════════════════════╣');
+    console.log(`║  Server running on:  http://localhost:${PORT}                   ║`);
+    console.log('║  Open this URL in your browser to access the system         ║');
+    console.log('╠══════════════════════════════════════════════════════════════╣');
+    console.log('║  Default Login:  admin / password123                        ║');
+    console.log('╚══════════════════════════════════════════════════════════════╝');
 });
 
 // Consumption Analytics
