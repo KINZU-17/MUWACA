@@ -1,7 +1,7 @@
 // MUWACA Water Billing System - JavaScript with Backend API
 // FIXED VERSION: duplicate IDs, script path, togglePaid, overdue logic, report rendering
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 function checkLogin() {
