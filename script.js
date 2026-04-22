@@ -1292,6 +1292,7 @@ function displayBills(bills, customers) {
                                 <td class="actions">
                                     <button onclick="editBill('${bill.bill_id}')" class="btn-edit">Edit</button>
                                     <button onclick="markAsPaid('${bill.bill_id}')" class="btn-paid">Mark Paid</button>
+                                    ${!bill.paid ? `<button onclick="initiateMpesaPayment('${bill.bill_id}', ${bill.total_payable_amount ?? 0})" class="btn-mpesa">Pay via M-Pesa</button>` : ''}
                                     <button onclick="deleteBill('${bill.bill_id}')" class="btn-delete">Delete</button>
                                 </td>
                             </tr>
@@ -2215,6 +2216,9 @@ function showSection(sectionId) {
             case 'reports':
                 loadReports();
                 break;
+            case 'rates':
+                loadRates();
+                break;
         }
     }
 }
@@ -2225,6 +2229,223 @@ document.getElementById('meterBtn').addEventListener('click', () => showSection(
 document.getElementById('financialBtn').addEventListener('click', () => showSection('financial'));
 document.getElementById('infrastructureBtn').addEventListener('click', () => showSection('infrastructure'));
 document.getElementById('reportsBtn').addEventListener('click', () => showSection('reports'));
+
+// ── Rate Management Functions ──────────────────────────────────────────────
+async function loadRates() {
+    try {
+        showSkeleton('rateList', 5);
+        const rates = await fetchData('/rates');
+        displayRates(rates);
+    } catch (error) {
+        console.error('Error loading rates:', error);
+        showToast('Failed to load rates', 'error');
+    }
+}
+
+function displayRates(rates) {
+    const container = document.getElementById('rateList');
+    if (!container) return;
+    
+    if (rates.length === 0) {
+        container.innerHTML = '<div class="no-data">No rates configured yet.</div>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="data-table">
+            <div class="table-header">
+                <h3>Rate Configurations (${rates.length})</h3>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rate Type</th>
+                            <th>Name</th>
+                            <th>Value</th>
+                            <th>Unit</th>
+                            <th>Effective Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rates.map(rate => {
+                            const isActive = rate.is_active ? 'Active' : 'Inactive';
+                            const statusClass = rate.is_active ? 'status-paid' : 'status-unpaid';
+                            return `
+                            <tr>
+                                <td>${rate.rate_type}</td>
+                                <td>${rate.rate_name}</td>
+                                <td>${rate.rate_value}</td>
+                                <td>${rate.unit}</td>
+                                <td>${rate.effective_date ? new Date(rate.effective_date).toLocaleDateString() : '-'}</td>
+                                <td><span class="status ${statusClass}">${isActive}</span></td>
+                                <td class="actions">
+                                    <button onclick="editRate('${rate.id}')" class="btn-edit">Edit</button>
+                                    <button onclick="deleteRate('${rate.id}')" class="btn-delete">Delete</button>
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+document.getElementById('rateForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const rateData = {
+        rate_type: document.getElementById('rateType').value,
+        rate_name: document.getElementById('rateName').value,
+        rate_value: parseFloat(document.getElementById('rateValue').value),
+        unit: document.getElementById('rateUnit').value,
+        effective_date: document.getElementById('effectiveDate').value,
+        expiry_date: document.getElementById('expiryDate').value || null
+    };
+    
+    try {
+        const rateId = document.getElementById('rateId').value;
+        const isEdit = rateId && rateId !== '';
+        const url = isEdit ? `/rates/${rateId}` : '/rates';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        await sendData(url, method, rateData);
+        
+        showToast(`Rate ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+        this.reset();
+        document.getElementById('rateId').value = '';
+        loadRates();
+    } catch (error) {
+        console.error('Error saving rate:', error);
+        showToast('Failed to save rate', 'error');
+    }
+});
+
+async function editRate(rateId) {
+    fetchData(`/rates/${rateId}`).then(rate => {
+        document.getElementById('rateId').value = rate.id;
+        document.getElementById('rateType').value = rate.rate_type;
+        document.getElementById('rateName').value = rate.rate_name;
+        document.getElementById('rateValue').value = rate.rate_value;
+        document.getElementById('rateUnit').value = rate.unit;
+        document.getElementById('effectiveDate').value = rate.effective_date;
+        document.getElementById('expiryDate').value = rate.expiry_date || '';
+    }).catch(error => {
+        console.error('Error loading rate:', error);
+        showToast('Failed to load rate details', 'error');
+    });
+}
+
+async function deleteRate(rateId) {
+    if (!confirm('Are you sure you want to delete this rate?')) {
+        return;
+    }
+    
+    try {
+        await sendData(`/rates/${rateId}`, 'DELETE');
+        showToast('Rate deleted successfully!', 'success');
+        loadRates();
+    } catch (error) {
+        console.error('Error deleting rate:', error);
+        showToast('Failed to delete rate', 'error');
+    }
+}
+
+// ── M-Pesa Payment Functions ──────────────────────────────────────────────
+document.getElementById('mpesaPaymentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    
+    const paymentData = {
+        bill_id: document.getElementById('mpesaBillId').value,
+        phone_number: document.getElementById('mpesaPhone').value,
+        amount: parseFloat(document.getElementById('mpesaAmount').value)
+    };
+    
+    const statusDiv = document.getElementById('mpesaStatus');
+    statusDiv.innerHTML = '';
+    const infoP = document.createElement('p');
+    infoP.className = 'info';
+    infoP.textContent = 'Initiating M-Pesa payment... Please wait.';
+    statusDiv.appendChild(infoP);
+    
+    try {
+        const response = await sendData('/mpesa/initiate', 'POST', paymentData);
+        
+        if (response.checkoutRequestId) {
+            statusDiv.innerHTML = '';
+            
+            const successP = document.createElement('p');
+            successP.className = 'success';
+            successP.textContent = 'Payment request sent! Check your phone for M-Pesa prompt.';
+            statusDiv.appendChild(successP);
+            
+            const idP = document.createElement('p');
+            idP.textContent = `Checkout Request ID: ${response.checkoutRequestId}`;
+            statusDiv.appendChild(idP);
+            
+            const checkBtn = document.createElement('button');
+            checkBtn.textContent = 'Check Payment Status';
+            checkBtn.onclick = () => checkMpesaStatus(response.checkoutRequestId);
+            statusDiv.appendChild(checkBtn);
+        } else {
+            statusDiv.innerHTML = '';
+            const errorP = document.createElement('p');
+            errorP.className = 'error';
+            errorP.textContent = 'Failed to initiate payment. Please try again.';
+            statusDiv.appendChild(errorP);
+        }
+    } catch (error) {
+        console.error('M-Pesa payment error:', error);
+        statusDiv.innerHTML = '';
+        const errorP = document.createElement('p');
+        errorP.className = 'error';
+        errorP.textContent = 'Payment failed. Please try again later.';
+        statusDiv.appendChild(errorP);
+    } finally {
+        submitBtn.disabled = false;
+    }
+});
+
+async function checkMpesaStatus(checkoutRequestId) {
+    try {
+        const status = await fetchData(`/mpesa/status/${checkoutRequestId}`);
+        const statusDiv = document.getElementById('mpesaStatus');
+        statusDiv.innerHTML = '';
+        
+        const messageP = document.createElement('p');
+        
+        if (status.status === 'completed') {
+            messageP.className = 'success';
+            messageP.textContent = `✅ Payment successful! Receipt: ${status.mpesa_receipt_number}`;
+            loadBills(); // Refresh bills list
+        } else if (status.status === 'pending') {
+            messageP.className = 'info';
+            messageP.textContent = '⏳ Payment pending. Please check your phone.';
+        } else {
+            messageP.className = 'error';
+            messageP.textContent = `❌ Payment failed: ${status.result_desc || 'Unknown error'}`;
+        }
+        
+        statusDiv.appendChild(messageP);
+    } catch (error) {
+        console.error('Error checking M-Pesa status:', error);
+        showToast('Failed to check payment status', 'error');
+    }
+}
+
+// Helper: Set bill ID for M-Pesa payment
+function initiateMpesaPayment(billId, amount) {
+    document.getElementById('mpesaBillId').value = billId;
+    document.getElementById('mpesaAmount').value = amount;
+    showSection('financial');
+    document.getElementById('mpesaPhone').focus();
+}
 
 // ── Toast Notification System ──────────────────────────────────────────────
 let notifications = [];
